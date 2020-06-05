@@ -69,9 +69,9 @@ bulk.pattern <- "bulk"
 dir.exists(figDir) || dir.create(figDir)
 
 ## read in matrix data -- re-bulild seg file to have copy number data instead of ratios
-cn5k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.nobad.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
-lr5k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.nobad.varbin.lowratio.data.txt", sep = "")), header = TRUE, as.is = TRUE)
-## seg5k <- read.table(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.nobad.varbin.short.cbs.seg", sep = "")), header = FALSE, col.names = c("cellID", "chrom", "start", "end", "nmark", "ratio"), as.is = TRUE)
+cn5k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
+lr5k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.lowratio.data.txt", sep = "")), header = TRUE, as.is = TRUE)
+## seg5k <- read.table(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.short.cbs.seg", sep = "")), header = FALSE, col.names = c("cellID", "chrom", "start", "end", "nmark", "ratio"), as.is = TRUE)
 
 ## load excluded cells
 ## exclCells <- c(readLines("excluded.cells.txt"), readLines("aberrant.cells.txt"))
@@ -132,9 +132,9 @@ alterationSummary$fga <- alterationSummary$bp.altered / 3098825702
 
 alterationSummary[is.na(alterationSummary)] <- 0
 
-write.table(alterationSummary, file = file.path(outDir, paste(sample.name, "_grch37.", bin.size, ".k50.nobad.varbin.FGA.txt", sep = "")), sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(alterationSummary, file = file.path(outDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.FGA.txt", sep = "")), sep = "\t", quote = FALSE, row.names = FALSE)
 
-## write.table(alterationSummary[grep(bulk.pattern, alterationSummary$cellID), ], file = file.path(outDir, paste(sample.name, "_bulk_grch37.", bin.size, ".k50.nobad.varbin.FGA.txt", sep = "")), sep = "\t", quote = FALSE, row.names = FALSE)
+## write.table(alterationSummary[grep(bulk.pattern, alterationSummary$cellID), ], file = file.path(outDir, paste(sample.name, "_bulk_grch37.", bin.size, ".k50.varbin.FGA.txt", sep = "")), sep = "\t", quote = FALSE, row.names = FALSE)
 
 ## head(alterationSummary)
 

@@ -1,4 +1,4 @@
- #!/home/gularter/opt/miniconda3/bin/Rscript
+#!/home/gularter/opt/miniconda3/bin/Rscript
 
 ## matrix data and seg files from varbin 
 ## which R is being used ! must be in single-cell-cnv environment
@@ -70,11 +70,6 @@ if(! argsL$bin.size %in% c("50k", "20k", "5k")) {
 
 
 ## retrieving data into matrices
-## library(ggplot2)
-## library(gplots)
-## library(vegan)
-## library(copynumber)
-
 ## Run parameters
 sample.name <- argsL$sample.name
 inDir  <- file.path(argsL$input.dir)
@@ -85,18 +80,18 @@ aligner <- argsL$aligner
 ## load copy number data
 cell.list <- gsub(paste0(".*(",sample.name,".*)\\.dd.*"), "\\1",
                   list.files(path = inDir,
-                             pattern = paste(".dd.grch37.", bin.size, ".k50.nobad.varbin.data.txt", sep = "")))
+                             pattern = paste(".dd.grch37.", bin.size, ".k50.varbin.data.txt", sep = "")))
 
 ## get coordinate data
 chh = read.table(file.path(inDir, paste(cell.list[1], ".dd.grch37.", bin.size,
-                                        ".k50.nobad.varbin.data.txt", sep = "")),
+                                        ".k50.varbin.data.txt", sep = "")),
                  header = TRUE)[,1:3]
 
 cat("reading copy number quantal data...\n")
 ## get seg.quantal data for each cell
 vbd <- sapply(cell.list, function(cell) {
     vbseg = read.table(file.path(inDir, paste(cell, ".dd.grch37.", bin.size,
-                                              ".k50.nobad.varbin.data.txt", sep = "")),
+                                              ".k50.varbin.data.txt", sep = "")),
                        header = TRUE)[,"seg.quantal"]
     vbseg
 })
@@ -105,13 +100,13 @@ vbd <- sapply(cell.list, function(cell) {
 cn <- data.frame(chh, vbd)
 
 write.table(cn, file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
-                                               ".k50.nobad.varbin.data.txt", sep = "")),
+                                               ".k50.varbin.data.txt", sep = "")),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 
 ## get cbs.seg data
 cbd <- sapply(cell.list, function(cell) {
     cbseg = read.table(file.path(inDir, paste(cell, ".dd.grch37.", bin.size,
-                                              ".k50.nobad.varbin.data.txt", sep = "")),
+                                              ".k50.varbin.data.txt", sep = "")),
                        header = TRUE)[, "cbs.seg"]
     cbseg
 })
@@ -120,13 +115,13 @@ cbd <- sapply(cell.list, function(cell) {
 cn.seg <- data.frame(chh, cbd)
 
 write.table(cn.seg, file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
-                                                   ".k50.nobad.varbin.cbs_seg.data.txt", sep = "")),
+                                                   ".k50.varbin.cbs_seg.data.txt", sep = "")),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 
 ## get lowess ration (lowratio) data (segmented)
 sbd <- sapply(cell.list, function(cell) {
     cbseg = read.table(file.path(inDir, paste(cell, ".dd.grch37.", bin.size,
-                                              ".k50.nobad.varbin.data.txt", sep = "")),
+                                              ".k50.varbin.data.txt", sep = "")),
                        header = TRUE)[, "seg.mean.LOWESS"]
     cbseg
 })
@@ -135,7 +130,7 @@ sbd <- sapply(cell.list, function(cell) {
 seg.mean.low <- data.frame(chh, sbd)
 
 write.table(seg.mean.low, file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
-                                                   ".k50.nobad.varbin.lowratio.data.txt", sep = "")),
+                                                   ".k50.varbin.lowratio.data.txt", sep = "")),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 
 ## MAPD
@@ -143,7 +138,7 @@ cat("estimating MAPD...\n")
 ## get lowess ration (lowratio) data (not segmented)
 lbd <- sapply(cell.list, function(cell) {
     cbseg = read.table(file.path(inDir, paste(cell, ".dd.grch37.", bin.size,
-                                              ".k50.nobad.varbin.data.txt", sep = "")),
+                                              ".k50.varbin.data.txt", sep = "")),
                        header = TRUE)[, "lowratio"]
     cbseg
 })
@@ -152,7 +147,7 @@ mapd.qc <- t(apply(lbd, 2, mapd))
 mapd.qc <- data.frame(cellID = rownames(mapd.qc), mapd.qc)
 
 write.table(mapd.qc, file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
-                                                    ".k50.nobad.varbin.mapd.qc.txt", sep = "")),
+                                                    ".k50.varbin.mapd.qc.txt", sep = "")),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 
 
@@ -166,20 +161,20 @@ igv.seg <- do.call(rbind, lapply(seg.files, read.delim))
 igv.seg$ID <- gsub(paste0(".*(",sample.name,".*)\\.dd.*"), "\\1", igv.seg$ID)
 
 write.table(igv.seg, file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
-                                                    ".k50.nobad.varbin.short.cbs.seg", sep = "")),
+                                                    ".k50.varbin.short.cbs.seg", sep = "")),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
 
 
 cat("reading ploidy and stats data...\n")
 ## write out cell annotations file
-q.stats.files <- list.files(inDir, pattern = "k50.nobad.varbin.quantal.stats.txt", full.names = TRUE)
+q.stats.files <- list.files(inDir, pattern = "k50.varbin.quantal.stats.txt", full.names = TRUE)
 quantal.stats <- do.call(rbind, lapply(q.stats.files, read.delim))
 quantal.stats <- data.frame(cellID = gsub(paste0(".*(",sample.name,".*)\\.dd.*"), "\\1", q.stats.files), quantal.stats)
 rownames(quantal.stats) <- quantal.stats$cellID
 
 write.table(quantal.stats,
             file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
-                                           ".k50.nobad.varbin.quantal.ploidy.txt", sep = "")),
+                                           ".k50.varbin.quantal.ploidy.txt", sep = "")),
             sep = "\t", quote = FALSE , row.names = FALSE)
 
 
