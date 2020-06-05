@@ -45,3 +45,13 @@ vignettes/*.pdf
 # other files
 .DS_Store
 
+# data files
+*.csv
+*.txt
+*.rds
+*.rda
+*.tar.gz
+*.xlxs
+*.docx
+*.html
+*.Rmd
