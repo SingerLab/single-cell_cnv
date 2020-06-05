@@ -76,13 +76,13 @@ bulk.pattern <- "bulk"
 
 
 ## read in mapd
-mapd.5k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "5k", ".k50.nobad.varbin.mapd.qc.txt", sep = "")), header = TRUE, as.is = TRUE)
+mapd.5k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "5k", ".k50.varbin.mapd.qc.txt", sep = "")), header = TRUE, as.is = TRUE)
 mapd.5k$bin.size.kb <- 550
 mapd.5k$nbins <- "5k"
-mapd.20k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "20k", ".k50.nobad.varbin.mapd.qc.txt", sep = "")), header = TRUE, as.is = TRUE)
+mapd.20k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "20k", ".k50.varbin.mapd.qc.txt", sep = "")), header = TRUE, as.is = TRUE)
 mapd.20k$bin.size.kb <- 137
 mapd.20k$nbins <- "20k"
-mapd.50k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "50k", ".k50.nobad.varbin.mapd.qc.txt", sep = "")), header = TRUE, as.is = TRUE)
+mapd.50k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "50k", ".k50.varbin.mapd.qc.txt", sep = "")), header = TRUE, as.is = TRUE)
 mapd.50k$bin.size.kb <- 54
 mapd.50k$nbins <- "50k"
 
@@ -120,17 +120,17 @@ write.table(mapd.qc$cellID[mapd.qc$mapd > 0.45 & mapd.qc$nbins == "50k"], file =
 
 ## Read in copy number data
 ## 5k
-cn5k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "5k", ".k50.nobad.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
+cn5k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "5k", ".k50.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
 cn5k$chrompos <- cn5k$chrompos + 1
 cn5k$abspos <- cumsum(cn5k$chrompos)
 
 ## 20k
-cn20k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "20k", ".k50.nobad.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
+cn20k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "20k", ".k50.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
 cn20k$chrompos <- cn20k$chrompos + 1
 cn20k$abspos <- cumsum(cn20k$chrompos)
 
 ## 50k
-cn50k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "50k", ".k50.nobad.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
+cn50k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "50k", ".k50.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
 cn50k$chrompos <- cn50k$chrompos + 1
 cn50k$abspos <- cumsum(cn50k$chrompos)
 

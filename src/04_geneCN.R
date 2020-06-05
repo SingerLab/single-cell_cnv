@@ -61,7 +61,7 @@ bulk.pattern <- "bulk"
 
 
 ## load copy number data
-cn50k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.50k.k50.nobad.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
+cn50k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.50k.k50.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
 
 gene.index.50k <- read.delim("res/varbin/grch37.50k.gene.index.txt", as.is = TRUE)
 
@@ -70,34 +70,34 @@ gene50k.hgnc <- expand2genes(cn50k[, -c(1:3)], gene.index.50k)
 gene50k.ensembl <- expand2genes(cn50k[, -c(1:3)], gene.index.50k, gene.id = "ensembl_gene_id")
 
 ## save matrix in RDS form
-saveRDS(gene50k.hgnc, file = file.path(outDir, paste(sample.name, "_grch37.50k.k50.nobad.varbin.hgnc.geneCN.rds", sep ="")))
-saveRDS(gene50k.ensembl, file = file.path(outDir, paste(sample.name, "_grch37.50k.k50.nobad.varbin.ensembl.geneCN.rds", sep ="")))
+saveRDS(gene50k.hgnc, file = file.path(outDir, paste(sample.name, "_grch37.50k.k50.varbin.hgnc.geneCN.rds", sep ="")))
+saveRDS(gene50k.ensembl, file = file.path(outDir, paste(sample.name, "_grch37.50k.k50.varbin.ensembl.geneCN.rds", sep ="")))
 
 ## keep gene50k intact for future use e.g. transformation of the geneCN object
-## write.table(data.frame(cellID = rownames(gene50k), gene50k), file.path(outDir, paste(sample.name, "_grch37.50k.k50.nobad.varbin.geneCN.txt", sep ="")), row.names = FALSE, quote = FALSE, sep = "\t")
+## write.table(data.frame(cellID = rownames(gene50k), gene50k), file.path(outDir, paste(sample.name, "_grch37.50k.k50.varbin.geneCN.txt", sep ="")), row.names = FALSE, quote = FALSE, sep = "\t")
 
 
 ## load 20k copy number data
-## cn20k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.20k.k50.nobad.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
+## cn20k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.20k.k50.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
 ## gene.index.20k <- read.delim("res/varbin/grch37.20k.gencode.index.txt", as.is = TRUE)[, c(1,5)]
 
 ## gene20k <- expand2genes(cn20k, gene.index.20k)
     
-## write.table(geneCN, file.path(outDir, paste(sample.name, "_grch37.20k.k50.nobad.varbin.geneCN.txt", sep ="")), row.names = FALSE, quote = TRUE, sep = "\t")
+## write.table(geneCN, file.path(outDir, paste(sample.name, "_grch37.20k.k50.varbin.geneCN.txt", sep ="")), row.names = FALSE, quote = TRUE, sep = "\t")
     
 ## load copy number data
-cn5k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.5k.k50.nobad.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
+## cn5k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.5k.k50.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
 
 ## 5k gene index
-gene.index.5k <- read.delim("res/varbin/grch37.5k.gene.index.txt", as.is = TRUE)
+## gene.index.5k <- read.delim("res/varbin/grch37.5k.gene.index.txt", as.is = TRUE)
 
 ## expanding from bin data to gene data
-gene5k.hgnc <- expand2genes(cn5k[, -c(1:3)], gene.index.5k)
-gene5k.ensembl <- expand2genes(cn5k[, -c(1:3)], gene.index.5k, gene.id = "ensembl_gene_id")
+## gene5k.hgnc <- expand2genes(cn5k[, -c(1:3)], gene.index.5k)
+## gene5k.ensembl <- expand2genes(cn5k[, -c(1:3)], gene.index.5k, gene.id = "ensembl_gene_id")
 
 ## save matrix in RDS form
-saveRDS(gene5k.hgnc, file = file.path(outDir, paste(sample.name, "_grch37.5k.k50.nobad.varbin.hgnc.geneCN.rds", sep ="")))
-saveRDS(gene5k.ensembl, file = file.path(outDir, paste(sample.name, "_grch37.5k.k50.nobad.varbin.ensembl.geneCN.rds", sep ="")))
+## saveRDS(gene5k.hgnc, file = file.path(outDir, paste(sample.name, "_grch37.5k.k50.varbin.hgnc.geneCN.rds", sep ="")))
+## saveRDS(gene5k.ensembl, file = file.path(outDir, paste(sample.name, "_grch37.5k.k50.varbin.ensembl.geneCN.rds", sep ="")))
 
 
 ## geneCNT <- parctan(geneCN)
