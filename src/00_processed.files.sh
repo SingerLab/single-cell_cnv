@@ -17,11 +17,11 @@ paste  <( echo $1 )  <(ls bsplit/*gz | wc -l) \
        <( ls preseq/*c_curve | wc -l ) \
        <( ls preseq/*lc_extrap | wc -l ) \
        <( ls stats/*stats | wc -l) \
-       <( ls varbin5k/*.nobad.varbin.data.txt | wc -l ) \
-       <( ls varbin20k/*.nobad.varbin.data.txt | wc -l )  \
-       <( ls varbin50k/*.nobad.varbin.data.txt | wc -l ) \
-       <( echo $(( $(wc -l vbData/*.50k.k50.nobad.varbin.mapd.qc.txt | cut -d ' ' -f 1 ) -1 )) ) \
-       <( echo $(( $(wc -l vbData/*.50k.k50.nobad.varbin.quantal.ploidy.txt | cut -d ' ' -f 1 ) -1 )) ) \
-       <( echo $(( $(head -n 1 vbData/*.5k.k50.nobad.varbin.data.txt | awk '{print NF}') -3 )) ) \
-       <( echo $(( $(head -n 1 vbData/*.20k.k50.nobad.varbin.data.txt | awk '{print NF}') -3 )) ) \
-       <( echo $(( $(head -n 1 vbData/*.50k.k50.nobad.varbin.data.txt | awk '{print NF}') -3 )) ) | tr ' ' "\t"
+       <( ls varbin5k/*k50.varbin.data.txt | wc -l ) \
+       <( ls varbin20k/*k50.varbin.data.txt | wc -l )  \
+       <( ls varbin50k/*k50.varbin.data.txt | wc -l ) \
+       <( echo $(( $(wc -l vbData/*.50k.k50.varbin.mapd.qc.txt | cut -d ' ' -f 1 ) -1 )) ) \
+       <( echo $(( $(wc -l vbData/*.50k.k50.varbin.quantal.ploidy.txt | cut -d ' ' -f 1 ) -1 )) ) \
+       <( echo $(( $(head -n 1 vbData/*.5k.k50.varbin.data.txt | awk '{print NF}') -3 )) ) \
+       <( echo $(( $(head -n 1 vbData/*.20k.k50.varbin.data.txt | awk '{print NF}') -3 )) ) \
+       <( echo $(( $(head -n 1 vbData/*.50k.k50.varbin.data.txt | awk '{print NF}') -3 )) ) | tr ' ' "\t"
