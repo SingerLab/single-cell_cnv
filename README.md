@@ -2,7 +2,7 @@
 SingerLab pipeline for demultiplexing, processing, and quality control of fastq files
 
 
-** Table 1. Current number of cells processed
+**Table 1.** Current number of cells processed
 
 |bioID    | n.fq.gz| n.dd.bam| n.bamqc| n.fastp| n.fastqc| n.fastq_screen| n.flagstat| n.idxstat| n.markdup| n.aln.metrics| n.cycle.metrics| n.dist.metrics| n.preseq.curve| n.presec.extrap| n.stats| n.5k.quantal| n.20k.quantal| n.50k.quantal| n.mapd.qc| n.ploidy| n.5k.cells| n.20k.cells| n.50k.cells|
 |:--------|-------:|--------:|-------:|-------:|--------:|--------------:|----------:|---------:|---------:|-------------:|---------------:|--------------:|--------------:|---------------:|-------:|------------:|-------------:|-------------:|---------:|--------:|----------:|-----------:|-----------:|
