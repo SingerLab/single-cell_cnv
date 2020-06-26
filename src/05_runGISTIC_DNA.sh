@@ -18,14 +18,15 @@ EXTENSION=$3
 OUT_STEM=$( basename $INFILE $EXTENSION )   
 OUT_DIR=$4
 
-BD=${OUT_DIR}/out_SC_${OUT_STEM}_c${CONF}  ## out_hg19_1M_c${CONF}
+BD=${OUT_DIR}/out_DNA_${OUT_STEM}_c${CONF}  ## out_[DNA|SC]_hg19_1M_c${CONF}
 
 
 [[ -d $BD ]] || mkdir $BD
 
-## Set thresholds for copy number to AMP = log2(2.5/2), and DEL = log2(1.2/2)
+## DNA: Default thresholds are kept for amplifications and deletions
+##  SC: Set thresholds for copy number to AMP = log2(2.5/2), and DEL = log2(1.2/2)
 ~/bin/gistic2 -refgene ${HG19MAT} -b ${BD} -seg ${INFILE} -mk $VBINS50K \
-	      -ta 0.322 -td 0.737 -conf 0.${CONF} -broad 1 -twoside 1 \
+	      -conf 0.${CONF} -broad 1 -twoside 1 \
 	      -res 0.03 -genegistic 1 -rx 0 -js 8 \
 	      -savegene 1 -gcm median -v 10 -armpeel 1
 
