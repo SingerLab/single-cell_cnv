@@ -1,5 +1,5 @@
 ## generate a gene CN for all cells
-R.home() == "/home/gularter/opt/miniconda3/envs/single-cell-cnv/lib/R" || stop("Wrong environment, run `conda activate single-cell-cnv`")
+R.home() == "/work/singer/opt/miniconda3/envs/single-cell-cnv/lib/R" || stop("Wrong environment, run `conda activate single-cell-cnv`")
 
 
 args <- commandArgs(trailingOnly = TRUE)

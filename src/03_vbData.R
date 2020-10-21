@@ -2,7 +2,7 @@
 
 ## matrix data and seg files from varbin 
 ## which R is being used ! must be in single-cell-cnv environment
-R.home() == "/home/gularter/opt/miniconda3/envs/single-cell-cnv/lib/R" || stop("Wrong environment, run `conda activate single-cell-cnv`")
+R.home() == "/work/singer/opt/miniconda3/envs/single-cell-cnv/lib/R" || stop("Wrong environment, run `conda activate single-cell-cnv`")
 
 source("src/myLib.R")
 
@@ -118,7 +118,7 @@ write.table(cn.seg, file = file.path(outDir, paste(sample.name, "_grch37.", bin.
                                                    ".k50.varbin.cbs_seg.data.txt", sep = "")),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 
-## get lowess ration (lowratio) data (segmented)
+## get lowess ratio (lowratio) data (segmented)
 sbd <- sapply(cell.list, function(cell) {
     cbseg = read.table(file.path(inDir, paste(cell, ".dd.grch37.", bin.size,
                                               ".k50.varbin.data.txt", sep = "")),
@@ -132,6 +132,23 @@ seg.mean.low <- data.frame(chh, sbd)
 write.table(seg.mean.low, file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
                                                    ".k50.varbin.lowratio.data.txt", sep = "")),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
+
+## bincount data (raw counts and unsegmented !)
+bcnt <- sapply(cell.list, function(cell) {
+    useg = read.table(file.path(inDir, paste(cell, ".dd.grch37.", bin.size,
+                                              ".k50.varbin.data.txt", sep = "")),
+                       header = TRUE)[, "bincount"]
+    useg
+})
+## colnames(cbd) <- gsub("\\.cbs\\.seg", "", colnames(cbd))
+
+raw.bin.count <- data.frame(chh, bcnt)
+
+write.table(raw.bin.count, file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
+                                                   ".k50.bin_counts.txt", sep = "")),
+            sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
 
 ## MAPD
 cat("estimating MAPD...\n")

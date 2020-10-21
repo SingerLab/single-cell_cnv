@@ -30,7 +30,8 @@ wait ${!}
 
 set +x
 
-echo bioID n.fq.gz n.dd.bam n.bamqc n.fastp n.fastqc n.fastq_screen n.flagstat n.idxstat n.markdup n.aln.metrics n.cycle.metrics n.dist.metrics n.preseq.curve n.presec.extrap n.stats n.5k.quantal n.20k.quantal n.50k.quantal n.mapd.qc n.ploidy n.5k.cells n.20k.cells n.50k.cells | tr ' ' "\t" > processed.files.txt && \
+date >> processed.files.txt
+echo bioID n.fq.gz n.dd.bam n.bamqc n.fastp n.fastqc n.fastq_screen n.flagstat n.idxstat n.markdup n.aln.metrics n.cycle.metrics n.dist.metrics n.preseq.curve n.presec.extrap n.stats n.5k.quantal n.20k.quantal n.50k.quantal n.mapd.qc n.ploidy n.5k.cells n.20k.cells n.50k.cells | tr ' ' "\t" >> processed.files.txt && \
     paste  <( echo $MID )  <(ls bsplit/*gz | wc -l) \
 	   <(ls bowtie_out/*dd.bam | wc -l) \
 	   <( ls bamqc/ | wc -l ) \
