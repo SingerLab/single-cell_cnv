@@ -1,5 +1,5 @@
 ## build a simple cell annotation file
-R.home() == "/home/gularter/opt/miniconda3/envs/single-cell-cnv/lib/R" || stop("Wrong environment, run `conda activate single-cell-cnv`")
+R.home() == "/work/singer/opt/miniconda3/envs/single-cell-cnv/lib/R" || stop("Wrong environment, run `conda activate single-cell-cnv`")
 
 library(RColorBrewer)
 library(wesanderson)

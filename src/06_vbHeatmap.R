@@ -1,5 +1,5 @@
 ## plot heatmaps of varbin matrix outputs
-R.home() == "/home/gularter/opt/miniconda3/envs/single-cell-cnv/lib/R" || stop("Wrong environment, run `conda activate single-cell-cnv")
+R.home() == "/work/singer/opt/miniconda3/envs/single-cell-cnv/lib/R" || stop("Wrong environment, run `conda activate single-cell-cnv")
 
 args <- commandArgs(trailingOnly = TRUE)
 ## args <- c("--sample.name=DD4388_MR", "--io.dir=vbData/", "--fig.dir=figures/", "--aligner=bowtie")

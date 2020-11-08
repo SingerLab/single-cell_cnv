@@ -44,16 +44,22 @@ MAX_PLOIDY=$5
 bpcount=$( echo $(zcat ${R1[$LSB_JOBINDEX]} | head -n 4 | awk 'NR==2 {print length}') )
 
 ## setting trim3
-if [ $bpcount -le 101 ]
+if [ $bpcount -le 51 ]
 then
+    trim5=0
+    trim3=0
+elif [ $bpcount -le 101 ]
+then
+    trim5=48
     trim3=0
 elif [ $bpcount -eq 151 ]
 then
+    trim5=48
     trim3=50
 fi
 
 ## alignment with bowtie
-bowtie --threads $LSB_MAX_NUM_PROCESSORS --sam --time --chunkmbs 256 --trim5 48 --trim3 $trim3 -m 1 --best --strata $BOWTIE_h37 <( zcat ${R1[$LSB_JOBINDEX]} ) | samtools view -h -bS - > ${OUT}/${MID}.bam  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").bowtie.log
+bowtie --threads $LSB_MAX_NUM_PROCESSORS --sam --time --chunkmbs 256 --trim5 $trim5 --trim3 $trim3 -m 1 --best --strata $BOWTIE_h37 <( zcat ${R1[$LSB_JOBINDEX]} ) | samtools view -h -bS - > ${OUT}/${MID}.bam  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").bowtie.log
 if [ $? -eq 0 ] ; then echo "alignment succesful" ; touch ${OUT}/${MID}.bam.ok  ; else exit 3 ; fi
 
 sambamba sort -m $MAX_MEM_GB --tmpdir=tmp/ -t $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.bam  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").sambamba_sort.log
