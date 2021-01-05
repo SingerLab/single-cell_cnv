@@ -1,5 +1,31 @@
 #!/bin/bash
 #BSUB -n 8 -R "rusage[mem=4]" -R "span[hosts=1]" -W 89
+#<usage>
+[[ $# -gt 0 ]] || {
+    echo "Description:"
+    echo "This script to runs the base pipeline to align, FASTQ files to the human"
+    echo " GRCh37 reference genome.  It then runs mark duplicates and duplicate"
+    echo " read removal.  Furthermore, it runs QC metrics from picard-tools, and"
+    echo " samtools on the bam files"
+    echo ""
+    echo "Usage:"    
+    echo "This script expects a directory name with the FASTQ files as the first"
+    echo " argument; the FASTQ extension as the second e.g. _001.fastq.gz, .fq.gz;"
+    echo " the output directory name as the third argument; and the ploidy range"
+    echo " as \`min' \`max' on the fourth and fifth arguments, respectively."
+    echo ""
+    echo "Example:"
+    echo "bsub -n 8 -M 4 -W 89 ./src/01_bowtie.sc.map.sh path/to/fastq/ .fq.gz bowtie_out/ 1.5 4.8"
+    echo "bsub -J 'bm[1-1500]' -n 8 -M 4 -W 89 ./src/01_bowtie.sc.map.sh path/to/fastq/ .fq.gz bowtie_out/ 1.5 4.8"
+    echo ""
+    echo "Alternatively it accepts LSB_JOBINDEX as an environment variable to run"
+    echo " specific files"
+    echo "bsub -n 8 -M 4 -W 89 LSB_JOBINDEX=9 ./src/01_bowtie.sc.map.sh path/to/fastq/ .fq.gz bowtie_out/ 1.5 4.8"
+    echo ""
+    exit 1;
+}
+#</usage>
+
 
 ## suggestions from https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -E -e -x -u -o pipefail
@@ -59,7 +85,7 @@ then
 fi
 
 ## alignment with bowtie
-bowtie --threads $LSB_MAX_NUM_PROCESSORS --sam --time --chunkmbs 256 --trim5 $trim5 --trim3 $trim3 -m 1 --best --strata $BOWTIE_h37 <( zcat ${R1[$LSB_JOBINDEX]} ) | samtools view -h -bS - > ${OUT}/${MID}.bam  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").bowtie.log
+/work/singer/opt/miniconda3/bin/bowtie --threads $LSB_MAX_NUM_PROCESSORS --sam --time --chunkmbs 256 --trim5 $trim5 --trim3 $trim3 -m 1 --best --strata $BOWTIE_h37 <( zcat ${R1[$LSB_JOBINDEX]} ) | samtools view -h -bS - > ${OUT}/${MID}.bam  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").bowtie.log
 if [ $? -eq 0 ] ; then echo "alignment succesful" ; touch ${OUT}/${MID}.bam.ok  ; else exit 3 ; fi
 
 sambamba sort -m $MAX_MEM_GB --tmpdir=tmp/ -t $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.bam  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").sambamba_sort.log
@@ -91,7 +117,7 @@ samtools stats -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.md.bam > stats/${MID}.bowt
 if [ $? -eq 0 ] ; then echo "samtools stats succesfull" ; else exit 9 ; fi
 
 unset DISPLAY
-qualimap bamqc -nt $LSB_MAX_NUM_PROCESSORS -bam $OUT/${MID}.md.bam -gd HUMAN -outdir bamqc/${MID}/ -outfile ${MID}.bowtie.pdf -outformat "PDF:HTML"  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").qualimap_bamqc.log
+/work/singer/opt/miniconda3/bin/qualimap bamqc -nt $LSB_MAX_NUM_PROCESSORS -bam $OUT/${MID}.md.bam -gd HUMAN -outdir bamqc/${MID}/ -outfile ${MID}.bowtie.pdf -outformat "PDF:HTML"  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").qualimap_bamqc.log
 if [ $? -eq 0 ] ; then echo "qualimap succesfull" ; else exit 10 ; fi
 
 preseq c_curve -B $OUT/${MID}.md.bam > preseq/${MID}.preseq.c_curve 2> log/${MID}/$(date "+%Y%m%d-%H%M%S").preseq.c_curve.log

@@ -1,5 +1,5 @@
 ## estimating the fraction of genome altered and frequency per cells
-R.home() == "/home/gularter/opt/miniconda3/envs/single-cell-cnv/lib/R" || stop("Wrong environment, run `conda activate single-cell-cnv`")
+R.home() == "/opt/common/CentOS_7/R/R-4.0.0/lib64/R" || stop("Wrong environment, run `module load R/R-4.0.0`")
 
 args <- commandArgs(trailingOnly = TRUE)
 ## args <- c("--sample.name=WD5816", "--bin.size=5k", "--io.idr=vbData/", "--fig.dir=figures/", "--aligner=bowtie")

@@ -24,10 +24,10 @@ BD=${OUT_DIR}/out_DNA_${OUT_STEM}_c${CONF}  ## out_[DNA|SC]_hg19_1M_c${CONF}
 [[ -d $BD ]] || mkdir $BD
 
 ## DNA: Default thresholds are kept for amplifications and deletions
-##  SC: Set thresholds for copy number to AMP = log2(2.5/2), and DEL = log2(1.2/2)
+##  SC: Set thresholds for copy number to AMP = log2(2.5)/2, and DEL = log2(1.2)/2
 ~/bin/gistic2 -refgene ${HG19MAT} -b ${BD} -seg ${INFILE} -mk $VBINS50K \
 	      -conf 0.${CONF} -broad 1 -twoside 1 \
-	      -res 0.03 -genegistic 1 -rx 0 -js 8 \
+	      -res 0.05 -genegistic 1 -rx 0 -js 8 \
 	      -savegene 1 -gcm median -v 10 -armpeel 1
 
 
