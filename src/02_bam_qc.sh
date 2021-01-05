@@ -1,4 +1,28 @@
 #!/bin/bash
+#<usage>
+[[ $# -gt 0 ]] || {
+    echo "Description:"
+    echo "This is a wrapper script to run BAM quality control tools on all"
+    echo " single-cell files in the FASTQ directory. Specifically, the list"
+    echo " of BAM files is the \`expected list', meaining it's derived from"
+    echo " the FASTQ file list submitted for alignment.  Tools launched are"
+    echo " samtools (flagstat, idxstat, stats), qualimap (bamqc), and preseq"
+    echo " (ccurve, extrap)."
+    echo ""
+    echo "Usage:"    
+    echo "This script expects a directory name with the FASTQ files as the first "
+    echo " argument, the FASTQ extension as the second e.g. _001.fastq.gz, .fq.gz"
+    echo " (the exact one so as to match the name of the BAM file), and the "
+    echo " directory name with the BAM files as the third argument"
+    echo ""
+    echo "Example:"
+    echo ""
+    echo " ./src/02_bam_qc.sh path/to/fastq/ .fq.gz bowtie_out/"
+    echo ""
+    exit 1;
+}
+#</usage>
+
 
 fastq_dir=$1
 EXTENSION=$2

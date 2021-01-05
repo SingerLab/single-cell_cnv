@@ -2,7 +2,7 @@
 
 ## matrix data and seg files from varbin 
 ## which R is being used ! must be in single-cell-cnv environment
-R.home() == "/work/singer/opt/miniconda3/envs/single-cell-cnv/lib/R" || stop("Wrong environment, run `conda activate single-cell-cnv`")
+R.home() == "/opt/common/CentOS_7/R/R-4.0.0/lib64/R" || stop("Wrong environment, run `conda activate single-cell-cnv`")
 
 source("src/myLib.R")
 

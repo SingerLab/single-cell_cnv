@@ -1,4 +1,22 @@
 #!/bin/bash
+#<usage>
+[[ $# -gt 0 ]] || {
+    echo "Description:"
+    echo "This is a wrapper script to run FASTQ quality control tools on all"
+    echo " single-cell FASTQ files in a directory.  Tools launched are fastqc, fastp"
+    echo " and fastq_screen."
+    echo ""
+    echo "Usage:"    
+    echo "This script expects a directory name with the FASTQ files as the first "
+    echo " argument and the FASTQ extension as the second e.g. _001.fastq.gz, .fq.gz"
+    echo ""
+    echo "Example:"
+    echo ""
+    echo " ./src/01_fastq_qc.sh path/to/bsplit/ .fq.gz"
+    echo ""
+    exit 1;
+}
+#</usage>
 
 fastq_dir=$1
 EXTENSION=$2

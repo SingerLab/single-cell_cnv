@@ -1,5 +1,24 @@
 #!/bin/bash
 #BSUB -n 3 -M 4 -W 359
+#<usage>
+[[ $# -gt 0 ]] || {
+    echo "Description:"
+    echo "This is a wrapper script to prepare aggregated matrices containing"
+    echo " integer copy number, lowess-ratio, and QC metrics"
+    echo ""
+    echo "Usage:"    
+    echo "This script expects a common bioID as the first argument, and the aligner"
+    echo " as a second argument.  The script expects the varbin{5,20,50}k/ directories"
+    echo " from our single-cell_cnv pipeline"
+    echo ""
+    echo "Example:"
+    echo ""
+    echo " bsub -Is -n 3 -M 3 -W 389./src/03_vbData.sh WD5816 bowtie"
+    echo ""
+    exit 1;
+}
+#</usage>
+
 echo "aggregating files:"
 echo "# number of files in :"
 echo "#bin.dir vbData ploidy vbStats" | tr ' ' "\t"
