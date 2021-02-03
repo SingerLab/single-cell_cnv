@@ -1,5 +1,4 @@
 ## Jude Kendall functions for single-cell copy number analysis
-
 require("DNAcopy")
 
 lowess.gc <- function(jtkx, jtky) {

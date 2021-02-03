@@ -77,7 +77,7 @@ bins <- readRDS(paste("res/qdnaseq/qdnaseq.bins.", bin.size, ".rds", sep = ""))
 ## number of reads per bin -- use CACHE -- saves time later
 ## dev: bamList <- list.files("bowtie_map/", pattern = "dd.bam$", full.names = TRUE)[1:10]  
 ## dev: readCounts <- binReadCounts(bins, bamfiles = bamList , cache = TRUE)
-readCounts <- binReadCounts(bins, path = inDir, ext = "dd.bam", cache = TRUE)
+
 saveRDS(readCounts, file = file.path(outDir, paste(sample.name, ".readCounts.", aligner, ".", bin.size, ".rds", sep = "")))
 ## readCounts <- readRDS(file.path(outDir, paste(sample.name, ".readCounts.", aligner, ".", bin.size, ".rds", sep = "")))
 

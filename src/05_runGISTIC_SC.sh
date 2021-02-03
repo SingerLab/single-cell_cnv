@@ -23,10 +23,10 @@ BD=${OUT_DIR}/out_SC_${OUT_STEM}_c${CONF}  ## out_hg19_1M_c${CONF}
 
 [[ -d $BD ]] || mkdir $BD
 
-## Set thresholds for copy number to AMP = log2(2.5)/2, and DEL = log2(1.2)/2
+## Set thresholds for copy number to AMP = log2(2.5/2), and DEL = log2(1.2/2)
 ~/bin/gistic2 -refgene ${HG19MAT} -b ${BD} -seg ${INFILE} -mk $VBINS50K \
-	      -ta 0.661 -td 0.132 -conf 0.${CONF} -broad 1 -twoside 1 \
-	      -res 0.03 -genegistic 1 -rx 0 -js 8 \
+	      -ta 0.321 -td 0.736 -conf 0.${CONF} -broad 1 -twoside 1 \
+	      -res 0.03 -genegistic 1 -rx 0 -js 8 -cap 3.3219\
 	      -savegene 1 -gcm median -v 10 -armpeel 1
 
 
