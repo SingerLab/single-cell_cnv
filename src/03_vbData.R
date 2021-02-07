@@ -1,8 +1,7 @@
-#!/home/gularter/opt/miniconda3/bin/Rscript
-
+#!/opt/common/CentOS_7/R/R-4.0.0/lib64/Rscript
 ## matrix data and seg files from varbin 
 ## which R is being used ! must be in single-cell-cnv environment
-R.home() == "/opt/common/CentOS_7/R/R-4.0.0/lib64/R" || stop("Wrong environment, run `conda activate single-cell-cnv`")
+## R.home() == "/opt/common/CentOS_7/R/R-4.0.0/lib64/R" || stop("Wrong environment, run `module load R`")
 
 source("src/myLib.R")
 
@@ -135,6 +134,7 @@ write.table(seg.mean.low, file = file.path(outDir, paste(sample.name, "_grch37."
 
 
 ## bincount data (raw counts and unsegmented !)
+cat("reading raw bin counts...\n")
 bcnt <- sapply(cell.list, function(cell) {
     useg = read.table(file.path(inDir, paste(cell, ".dd.grch37.", bin.size,
                                               ".k50.varbin.data.txt", sep = "")),
@@ -142,13 +142,47 @@ bcnt <- sapply(cell.list, function(cell) {
     useg
 })
 ## colnames(cbd) <- gsub("\\.cbs\\.seg", "", colnames(cbd))
-
 raw.bin.count <- data.frame(chh, bcnt)
 
-write.table(raw.bin.count, file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
-                                                   ".k50.bin_counts.txt", sep = "")),
+write.table(raw.bin.count,
+            file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
+                                           ".k50.bin_counts.txt", sep = "")),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 
+# extract gc.content from the first file
+gc.content <- read.table(file.path(inDir, paste(cell.list[1], ".dd.grch37.",
+                                                bin.size,
+                                                ".k50.varbin.data.txt", sep = "")),
+                         header = TRUE)[, "gc.content"]
+
+## scale to geometric mean
+TARGET_SCALE <- 2^mean(log2(colSums(bcnt+1)))
+
+## run lowess/loess normalization
+cat("gc corrected bin counts...\n")
+gc.norm.bin.count <- apply(bcnt, 2, function(rbc) {
+    ## estimate bin weights based on gc (4 sig. digits)
+    wts <- tapply(rbc, round(gc.content, digits = 4), sum)
+    wts <- wts[as.character(round(gc.content, 4))]
+    ## log read count
+    ## TARGET_SCALE <- 1e6
+    scl <- TARGET_SCALE / sum(rbc +1)
+    logtn <- log2((rbc + 1) * scl)
+    ## weighed loess regression
+    gcb <- loess(logtn ~ gc.content, weights = wts, span = 0.3,
+                 control = loess.control(surface = "direct"), 
+                 degree = 2)
+    ## scaling read bin counts
+    res <- 2^-gcb$fitted * rbc
+    ## return res
+    return(res)
+})
+
+write.table(gc.norm.bin.count,
+            file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
+                                           ".k50.gc_corrected.bin_counts.txt",
+                                           sep = "")),
+            sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 
 ## MAPD
 cat("estimating MAPD...\n")

@@ -124,7 +124,7 @@ if(nrow(mb20) != 0)  alterationSummary <- merge(alterationSummary, mb20, by = "c
 if(nrow(mb20L) != 0) alterationSummary <- merge(alterationSummary, mb20L, by = "cellID", all = TRUE)
 
 ## test this first
-## if(!"n.segments.20mb.deletion" %in% names(alterationSummary)) alterationSummary$n.segments.20mb.deletion <- 0
+if(!"n.segments.20mb.deletion" %in% names(alterationSummary)) alterationSummary$n.segments.20mb.deletion <- 0
 
 ## FGA = Fraction of Genome Altered / proportion of the genome not in diploid state
 ## usisng goldenPath genome length
@@ -135,7 +135,6 @@ alterationSummary[is.na(alterationSummary)] <- 0
 write.table(alterationSummary, file = file.path(outDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.FGA.txt", sep = "")), sep = "\t", quote = FALSE, row.names = FALSE)
 
 ## write.table(alterationSummary[grep(bulk.pattern, alterationSummary$cellID), ], file = file.path(outDir, paste(sample.name, "_bulk_grch37.", bin.size, ".k50.varbin.FGA.txt", sep = "")), sep = "\t", quote = FALSE, row.names = FALSE)
-
 ## head(alterationSummary)
 
 pdf(file.path(figDir, paste(sample.name, "_grch37.", bin.size, ".k50.cna.pdf", sep = "")), width = 298/25.4, height = 210/25.4)
