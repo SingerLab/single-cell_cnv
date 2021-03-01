@@ -2,7 +2,6 @@
 ## matrix data and seg files from varbin 
 ## which R is being used ! must be in single-cell-cnv environment
 ## R.home() == "/opt/common/CentOS_7/R/R-4.0.0/lib64/R" || stop("Wrong environment, run `module load R`")
-
 source("src/myLib.R")
 
 ## Collect arguments
@@ -174,10 +173,10 @@ gc.norm.bin.count <- apply(bcnt, 2, function(rbc) {
                  degree = 2)
     ## scaling read bin counts
     res <- 2^-gcb$fitted * rbc
+    res[is.na(res)] <- 0
     ## return res
     return(res)
 })
-
 write.table(gc.norm.bin.count,
             file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
                                            ".k50.gc_corrected.bin_counts.txt",
