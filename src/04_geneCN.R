@@ -1,6 +1,5 @@
 ## generate a gene CN for all cells
-R.home() == "/opt/common/CentOS_7/R/R-4.0.0/lib64/R" || stop("Wrong environment, run `module load R/R-4.0.0`")
-
+## R.home() == "/opt/common/CentOS_7/R/R-4.0.0/lib64/R" || stop("Wrong environment, run `module load R/R-4.0.0`")
 
 args <- commandArgs(trailingOnly = TRUE)
 ## args <- c("--sample.name=WD5816", "--io.dir=vbData/", "--fig.dir=figures/", "aligner=bowtie")
