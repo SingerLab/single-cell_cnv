@@ -1,26 +1,42 @@
 #!/bin/bash
-## run as bsub -Is -n 1 -M 4 -W 16:00 ./runGistic.sh
+## run as bsub -n 1 -M 4 -W 16:00 ./runGistic.sh
 #BSUB -n 1 -M 12 -W 359
+
+#<usage>
+## :: important :: 
+##  deploy on ../ e.g. when you do `ls` you should see both res/ and src/
+
+# bsub -n 1 -M 4 -W 16:00 ./src/05_runGISTIC_DNA.sh <conf> <seg_file> <.seg_extension> <path/to/output/>
+
+# bsub -n 1 -M 4 -W 16:00 ./src/05_runGISTIC_DNA.sh 80 DD4388_bulkDNA.seg .seg ./gistics/
+
+## notes:  the extension is used by `basename` to create the output directory for the sample
+
+#</usage>
 
 set -e -x -o pipefail -u
 
+## path to GISTIC hg19.mat file is located
 HG19MAT=${HOME}/genomes/homo_sapiens/Ensembl/GRCh37.p13/Sequence/GISTIC2/hg19.mat
 
+## path to marker files based on 5k, 20k, and 50k 
+## contained in res:  
 VBINS50K=res/gistic/grch37.bin.boundaries.50k.bowtie.k50.makerFile.txt
 VBINS20K=res/gistic/grch37.bin.boundaries.20k.bowtie.k50.makerFile.txt
 VBINS5K=res/gistic/grch37.bin.boundaries.5k.bowtie.k50.makerFile.txt
 
-
+## confidence intervals, seg file, and file extension
 CONF=$1
 INFILE=$2
 EXTENSION=$3
+## creating sample output diretory :: removes extension
 [[ ! -z "$EXTENSION" ]] || EXTENSION=.seg
-OUT_STEM=$( basename $INFILE $EXTENSION )   
+OUT_STEM=$( basename $INFILE $EXTENSION )
+# output directory to collect all samples, for this directory use "./"
 OUT_DIR=$4
 
+## create the final path/to/output
 BD=${OUT_DIR}/out_DNA_${OUT_STEM}_c${CONF}  ## out_[DNA|SC]_hg19_1M_c${CONF}
-
-
 [[ -d $BD ]] || mkdir $BD
 
 ## DNA: Default thresholds are kept for amplifications and deletions
