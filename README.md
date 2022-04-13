@@ -2,8 +2,29 @@
 SingerLab pipeline for demultiplexing, processing, and quality control of
 fastq files
 
+## steps for single-end 50bp
+1. run ./src/bdplex/barcode.bsplit.sh
+2. QC fastq files
+3. run ./src/01_bowtie.sc.map.sh ## automatically launches 02_varbin.sh
+4. QC bam files
+5. run ./src/03_vbData.sh
 
-**Table 1.** Current processed
+
+## steps for paired end 100bp
+
+### special requirements
+For PE demultiplexing insall wannaAln at https://github.com/aquaskyline/WannaAln
+
+1. run ./src/bdplex/barcode.wsplit.sh
+2. QC fastq files
+3. run ./src/01_bwa.sc.map.sh
+4. QC bam files
+5. run 02_varbin.sh
+6. run ./src/03_vbData.sh
+
+
+## Scalability
+**Table 1.** Currently processed cells
 
 |bioID    | n.fq.gz| n.dd.bam| n.bamqc| n.fastp| n.fastqc| n.fastq_screen| n.flagstat| n.idxstat| n.markdup| n.aln.metrics| n.cycle.metrics| n.dist.metrics| n.preseq.curve| n.presec.extrap| n.stats| n.5k.quantal| n.20k.quantal| n.50k.quantal| n.mapd.qc| n.ploidy| n.5k.cells| n.20k.cells| n.50k.cells|
 |:--------|-------:|--------:|-------:|-------:|--------:|--------------:|----------:|---------:|---------:|-------------:|---------------:|--------------:|--------------:|---------------:|-------:|------------:|-------------:|-------------:|---------:|--------:|----------:|-----------:|-----------:|
