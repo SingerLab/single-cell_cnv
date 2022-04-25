@@ -1,8 +1,38 @@
 # single_cell_cnv
 SingerLab pipeline for demultiplexing, processing, and quality control of
-fastq files
+fastq files.  Built for use with LSF or direct `bash` command line with LSF environment variables
 
-## steps for single-end 50bp
+## dependencies
+* Alignment
+   - bwa
+   - bowtie *version 1*
+   - picard
+   - samtools
+   - sambamba
+   
+* QC tools
+   - fastqc
+   - fastq_screen
+   - fastp
+   - qualimap
+   - preseq
+   - picard
+   - samtools
+
+## Recommended
+* QC
+   - MultiQC
+
+* Visualization 
+   - Complex Heatmap
+   - IGV
+
+* Analysis
+   - R/gac (http://github.com/SingerLab/gac)
+
+## Usage
+
+### steps for single-end 50bp
 1. run ./src/bdplex/barcode.bsplit.sh
 2. QC fastq files
 3. run ./src/01_bowtie.sc.map.sh ## automatically launches 02_varbin.sh
@@ -10,10 +40,8 @@ fastq files
 5. run ./src/03_vbData.sh
 
 
-## steps for paired end 100bp
-
-### special requirements
-For PE demultiplexing insall wannaAln at https://github.com/aquaskyline/WannaAln
+### steps for paired end 100bp
+*Note:* For Paired-end demultiplexing insall wannaAln at https://github.com/aquaskyline/WannaAln
 
 1. run ./src/bdplex/barcode.wsplit.sh
 2. QC fastq files
