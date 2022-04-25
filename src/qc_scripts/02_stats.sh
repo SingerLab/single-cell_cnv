@@ -24,6 +24,8 @@ echo $MID
 OUT=$3
 [[ ! -z "$OUT" ]] || OUT=bowtie_out/
 
+ALIGNER=$(echo $OUT | sed -e 's/_.*//' -e 's:/::g')
+
 [ -d stats ] || mkdir stats
 
-samtools stats -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.md.bam > stats/${MID}.bowtie.samtools.stats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_stats.log
+samtools stats -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.md.bam > stats/${MID}.${ALIGNER}.samtools.stats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_stats.log

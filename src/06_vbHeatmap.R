@@ -30,8 +30,6 @@ if("--help" %in% args) {
   q(save="no")
 }
 
-##      --bin.size=(5k|20k|50k)                 - character, number of bins; for focal gene CN use 20k or 50k
-
 ## Parse arguments (we expect the form --arg=value)
 parseArgs <- function(x) strsplit(sub("^--", "", x), "=")
 

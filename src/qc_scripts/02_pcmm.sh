@@ -6,10 +6,6 @@ set -E -e -x -u -o pipefail
 echo $LSB_JOBINDEX
 echo $LSB_MAX_NUM_PROCESSORS
 
-BWA_h37=/ifs/depot/pi/resources/genomes/GRCh37/bwa_fasta/b37.fasta
-GFF_h37=~/genomes/homo_sapiens/Ensembl/GRCh37.p13/Annotation/Genes/gencode.v19.annotation.gtf
-BOWTIE_h37=~/genomes/homo_sapiens/Ensembl/GRCh37.p13/Sequence/BowtieIndex/b37.fasta
-
 R1=( $( ls ${1}*fq.gz ) )
 
 EXTENSION=$2
@@ -24,7 +20,15 @@ echo $MID
 OUT=$3
 [[ ! -z "$OUT" ]] || OUT=bowtie_out/
 
+## EXPERIMENTAL
+GENOME=$(samtools view -H ${OUT}/${MID}.md.bam | grep "@PG" | grep "genomes" | sed -E 's/.*CL://' | cut -d ' ' -f 6)
+
+## BWA_h37=/juno/depot/pi/resources/genomes/GRCh37/bwa_fasta/b37.fasta
+## GFF_h37=~/genomes/homo_sapiens/Ensembl/GRCh37.p13/Annotation/Genes/gencode.v19.annotation.gtf
+## BOWTIE_h37=~/genomes/homo_sapiens/Ensembl/GRCh37.p13/Sequence/BowtieIndex/b37.fasta
+
+    
 [ -d metrics ] || mkdir metrics
 
-picard CollectMultipleMetrics I=$OUT/${MID}.md.bam O=metrics/$MID R=${BOWTIE_h37}  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").picard_metrics.log
+picard CollectMultipleMetrics I=$OUT/${MID}.md.bam O=metrics/$MID R=${GENOME}  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").picard_metrics.log
 if [ $? -eq 0 ] ; then echo "picard metrics succesfull" ; else exit 4 ; fi

@@ -1,30 +1,54 @@
 #!/bin/bash
 ## run as bsub -Is -n 1 -M 4 -W 16:00 ./runGistic.sh
 #BSUB -n 1 -M 12 -W 359
+#<usage>
+[[ $# -gt 0 ]] || {
+    echo "Description:"
+    echo "This script to runs GISTIC for 20kb with parameters optimized for single-cell log-ratio cutoffs"
+    echo ""
+    echo "Usage:"    
+    echo "bsub -n 1 -M 12 -W 359 ./src/05_runGISTIC_SC.sh <confidence> path/to/file.cbs.seg <file.extension> <5k|20k|50k bin_level> <out_dir>"
+    echo "bsub -n 1 -M 12 -W 359 ./src/05_runGISTIC_SC.sh 80 path/to/file.cbs.seg .cbs.seg 20k gistic_out/"
+    echo ""
+    exit 1;
+}
+#</usage>
 
 set -e -x -o pipefail -u
 
 HG19MAT=${HOME}/genomes/homo_sapiens/Ensembl/GRCh37.p13/Sequence/GISTIC2/hg19.mat
-
-VBINS50K=res/gistic/grch37.bin.boundaries.50k.bowtie.k50.makerFile.txt
-VBINS20K=res/gistic/grch37.bin.boundaries.20k.bowtie.k50.makerFile.txt
-VBINS5K=res/gistic/grch37.bin.boundaries.5k.bowtie.k50.makerFile.txt
-
 
 CONF=$1
 INFILE=$2
 EXTENSION=$3
 [[ ! -z "$EXTENSION" ]] || EXTENSION=.seg
 OUT_STEM=$( basename $INFILE $EXTENSION )   
-OUT_DIR=$4
+BIN_LEVEL=$4
+OUT_DIR=$5
 
-BD=${OUT_DIR}/out_SC_${OUT_STEM}_c${CONF}  ## out_hg19_1M_c${CONF}
+## VBINS50K=res/gistic/grch37.bin.boundaries.50k.bowtie.k50.makerFile.txt
+## VBINS20K=res/gistic/grch37.bin.boundaries.20k.bowtie.k50.makerFile.txt
+## VBINS5K=res/gistic/grch37.bin.boundaries.5k.bowtie.k50.makerFile.txt
 
 
-[[ -d $BD ]] || mkdir $BD
+if [ $BIN_LEVEL == "5k" ]
+then
+    VBINS=res/gistic/grch37.bin.boundaries.5k.bowtie.k50.makerFile.txt
+elif [ $BIN_LEVEL == "20k" ]
+then
+    VBINS=res/gistic/grch37.bin.boundaries.20k.bowtie.k50.makerFile.txt
+elif [ $BIN_LEVEL == "50k" ]
+then
+    VBINS=res/gistic/grch37.bin.boundaries.50k.bowtie.k50.makerFile.txt
+fi
+
+BD=${OUT_DIR}/out_SC_${OUT_STEM}_${BIN_LEVEL}_c${CONF}  ## out_hg19_1M_c${CONF}
+
+
+[[ -d $BD ]] || mkdir -p $BD
 
 ## Set thresholds for copy number to AMP = log2(2.5/2), and DEL = log2(1.2/2)
-~/bin/gistic2 -refgene ${HG19MAT} -b ${BD} -seg ${INFILE} -mk $VBINS50K \
+~/bin/gistic2 -refgene ${HG19MAT} -b ${BD} -seg ${INFILE} -mk $VBINS \
 	      -ta 0.321 -td 0.736 -conf 0.${CONF} -broad 1 -twoside 1 \
 	      -res 0.03 -genegistic 1 -rx 0 -js 8 -cap 3.3219\
 	      -savegene 1 -gcm median -v 10 -armpeel 1

@@ -6,10 +6,6 @@ set -E -e -x -u -o pipefail
 echo $LSB_JOBINDEX
 echo $LSB_MAX_NUM_PROCESSORS
 
-BWA_h37=/ifs/depot/pi/resources/genomes/GRCh37/bwa_fasta/b37.fasta
-GFF_h37=~/genomes/homo_sapiens/Ensembl/GRCh37.p13/Annotation/Genes/gencode.v19.annotation.gtf
-BOWTIE_h37=~/genomes/homo_sapiens/Ensembl/GRCh37.p13/Sequence/BowtieIndex/b37.fasta
-
 R1=( $( ls ${1}*fq.gz ) )
 
 EXTENSION=$2
@@ -24,8 +20,16 @@ echo $MID
 OUT=$3
 [[ ! -z "$OUT" ]] || OUT=bowtie_out/
 
+ALIGNER=$(echo $OUT | sed -e 's/_.*//' -e 's:/::g')
+
+## consider using something like this to assign aligner
+## VAR='GNU/Linux is an operating system'
+## if [[ $VAR =~ .*Linux.* ]]; then
+##   echo "It's there."
+## fi
+
 [ -d idxstats ] || mkdir idxstats
 
-samtools idxstats -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.md.bam > idxstats/${MID}.bowtie.idxstats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_idxstats.log
+samtools idxstats -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.md.bam > idxstats/${MID}.${ALIGNER}.idxstats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_idxstats.log
 
 

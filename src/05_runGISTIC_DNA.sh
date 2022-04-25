@@ -1,17 +1,17 @@
 #!/bin/bash
 ## run as bsub -n 1 -M 4 -W 16:00 ./runGistic.sh
 #BSUB -n 1 -M 12 -W 359
-
 #<usage>
-## :: important :: 
-##  deploy on ../ e.g. when you do `ls` you should see both res/ and src/
-
-# bsub -n 1 -M 4 -W 16:00 ./src/05_runGISTIC_DNA.sh <conf> <seg_file> <.seg_extension> <path/to/output/>
-
-# bsub -n 1 -M 4 -W 16:00 ./src/05_runGISTIC_DNA.sh 80 DD4388_bulkDNA.seg .seg ./gistics/
-
-## notes:  the extension is used by `basename` to create the output directory for the sample
-
+[[ $# -gt 0 ]] || {
+    echo "Description:"
+    echo "This script to runs GISTIC for 20kb with parameters optimized for bulkDNA log-ratio cutoffs"
+    echo ""
+    echo "Usage:"    
+    echo "bsub -n 1 -M 12 -W 359 ./src/05_runGISTIC_SC.sh <confidence> path/to/file.cbs.seg <file.extension> <5k|20k|50k bin_level> <out_dir>"
+    echo "bsub -n 1 -M 12 -W 359 ./src/05_runGISTIC_SC.sh 80 path/to/file.cbs.seg 20k .cbs.seg gistic_out/"
+    echo ""
+    exit 1;
+}
 #</usage>
 
 set -e -x -o pipefail -u
@@ -19,29 +19,41 @@ set -e -x -o pipefail -u
 ## path to GISTIC hg19.mat file is located
 HG19MAT=${HOME}/genomes/homo_sapiens/Ensembl/GRCh37.p13/Sequence/GISTIC2/hg19.mat
 
-## path to marker files based on 5k, 20k, and 50k 
-## contained in res:  
-VBINS50K=res/gistic/grch37.bin.boundaries.50k.bowtie.k50.makerFile.txt
-VBINS20K=res/gistic/grch37.bin.boundaries.20k.bowtie.k50.makerFile.txt
-VBINS5K=res/gistic/grch37.bin.boundaries.5k.bowtie.k50.makerFile.txt
 
 ## confidence intervals, seg file, and file extension
 CONF=$1
 INFILE=$2
 EXTENSION=$3
+BIN_LEVEL=$4
+## VBINS50K=res/gistic/grch37.bin.boundaries.50k.bowtie.k50.makerFile.txt
+## VBINS20K=res/gistic/grch37.bin.boundaries.20k.bowtie.k50.makerFile.txt
+## VBINS5K=res/gistic/grch37.bin.boundaries.5k.bowtie.k50.makerFile.txt
+
+## path to marker files based on 5k, 20k, and 50k 
+if [ $BIN_LEVEL == "5k" ]
+then
+    VBINS=res/gistic/grch37.bin.boundaries.5k.bowtie.k50.makerFile.txt
+elif [ $BIN_LEVEL == "20k" ]
+then
+    VBINS=res/gistic/grch37.bin.boundaries.20k.bowtie.k50.makerFile.txt
+elif [ $BIN_LEVEL == "50k" ]
+then
+    VBINS=res/gistic/grch37.bin.boundaries.50k.bowtie.k50.makerFile.txt
+fi
+
 ## creating sample output diretory :: removes extension
 [[ ! -z "$EXTENSION" ]] || EXTENSION=.seg
 OUT_STEM=$( basename $INFILE $EXTENSION )
 # output directory to collect all samples, for this directory use "./"
-OUT_DIR=$4
+OUT_DIR=$5
 
 ## create the final path/to/output
-BD=${OUT_DIR}/out_DNA_${OUT_STEM}_c${CONF}  ## out_[DNA|SC]_hg19_1M_c${CONF}
+BD=${OUT_DIR}/out_DNA_${OUT_STEM}_${BIN_LEVEL}_c${CONF}  ## out_[DNA|SC]_hg19_1M_c${CONF}
 [[ -d $BD ]] || mkdir $BD
 
 ## DNA: Default thresholds are kept for amplifications and deletions
 ##  SC: Set thresholds for copy number to AMP = log2(2.5)/2, and DEL = log2(1.2)/2
-~/bin/gistic2 -refgene ${HG19MAT} -b ${BD} -seg ${INFILE} -mk $VBINS50K \
+~/bin/gistic2 -refgene ${HG19MAT} -b ${BD} -seg ${INFILE} -mk $VBINS \
 	      -conf 0.${CONF} -broad 1 -twoside 1 \
 	      -res 0.05 -genegistic 1 -rx 0 -js 8 \
 	      -savegene 1 -gcm median -v 10 -armpeel 1

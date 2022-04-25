@@ -344,8 +344,8 @@ cbs.segment01 <- function(indir, outdir, varbin.gc, varbin.data, stat.data, samp
     cbs.long.nobad <- m[, 1]
     
 ##### NEW STUFF also check min.width=2 above
-    
-    write.table(thisShort, sep = "\t", file = file.path(outdir, paste(sample.name, ".grch37.", bin.size, ".k50.nobad.varbin.short.cbs.seg", sep = "")), quote = FALSE, row.names = FALSE) 
+
+##%     write.table(thisShort, sep = "\t", file = file.path(outdir, paste(sample.name, ".grch37.", bin.size, ".k50.nobad.varbin.short.cbs.seg", sep = "")), quote = FALSE, row.names = FALSE) 
     
     workShort <- thisShort
     workShort$segnum <- 0
@@ -418,53 +418,53 @@ cbs.segment01 <- function(indir, outdir, varbin.gc, varbin.data, stat.data, samp
     x.at <- c(0, 0.5, 1, 1.5, 2, 2.5, 3) * 10^9
     x.labels <- c("0", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0")
 
-    tryCatch({
-        ## pdf(file.path(outdir, paste(sample.name, ".", bin.size, ".wg.nobad.pdf", sep = "")), height = 149/25.4, width = 298/25.4)
-        png(file.path(outdir, paste(sample.name, ".", bin.size, ".wg.nobad.png", sep = "")), height = 149, width = 298, units = "mm", res = 350)
-        plot(x = thisRatioNobig$abspos, y = thisRatioNobig$lowratio,
-             log = "y", main = paste(sample.name, alt.sample.name),
-             xaxt = "n", xlab = "Genome Position Gb", ylab = "Ratio", col = "#CCCCCC", cex = 0.4)
-        lines(x = thisRatioNobig$abspos, y = thisRatioNobig$lowratio, col = "#CCCCCC", lwd = 0.8)
-        points(x = thisRatioNobig$abspos, y = thisRatioNobig$seg.mean.LOWESS, col = "#D40000", cex = 0.8)
-        lines(x = thisRatioNobig$abspos, y = thisRatioNobig$seg.mean.LOWESS, col = "#D40000")
-        axis(1, at = chr.at, labels = chr.text, cex = 0.8, tick = FALSE)
-        abline(h = hlines, lty = 3)
-        abline(v = vlines, lty = 3)
-        mtext(text = paste("Ploidy =", thisMultiplier, "; ",
-                           "Total Reads =", bam.stats$TotalReads, "; ",
-                           "Reads Kept =", bam.stats$ReadsKept, "; ",
-                           "Median Bin Count =", bam.stats$MedianBinCount, "; ",
-                           "MAPD =", round(mapd.qc["mapd"],2), "+/-", round(mapd.qc["mapd.sd"], 2), "; ",
-                           "Avg. Genome Coverage =", format(bam.stats$GenomeCoverage, digits = 2)), adj = 0)
-        dev.off()
-    })
+##%     tryCatch({
+##%         ## pdf(file.path(outdir, paste(sample.name, ".", bin.size, ".wg.nobad.pdf", sep = "")), height = 149/25.4, width = 298/25.4)
+##%         png(file.path(outdir, paste(sample.name, ".", bin.size, ".wg.nobad.png", sep = "")), height = 149, width = 298, units = "mm", res = 350)
+##%         plot(x = thisRatioNobig$abspos, y = thisRatioNobig$lowratio,
+##%           log = "y", main = paste(sample.name, alt.sample.name),
+##%              xaxt = "n", xlab = "Genome Position Gb", ylab = "Ratio", col = "#CCCCCC", cex = 0.4)
+##%         lines(x = thisRatioNobig$abspos, y = thisRatioNobig$lowratio, col = "#CCCCCC", lwd = 0.8)
+##%         points(x = thisRatioNobig$abspos, y = thisRatioNobig$seg.mean.LOWESS, col = "#D40000", cex = 0.8)
+##%         lines(x = thisRatioNobig$abspos, y = thisRatioNobig$seg.mean.LOWESS, col = "#D40000")
+##%         axis(1, at = chr.at, labels = chr.text, cex = 0.8, tick = FALSE)
+##%         abline(h = hlines, lty = 3)
+##%         abline(v = vlines, lty = 3)
+##%         mtext(text = paste("Ploidy =", thisMultiplier, "; ",
+##%                            "Total Reads =", bam.stats$TotalReads, "; ",
+##%                            "Reads Kept =", bam.stats$ReadsKept, "; ",
+##%                            "Median Bin Count =", bam.stats$MedianBinCount, "; ",
+##%                            "MAPD =", round(mapd.qc["mapd"],2), "+/-", round(mapd.qc["mapd.sd"], 2), "; ",
+##%                            "Avg. Genome Coverage =", format(bam.stats$GenomeCoverage, digits = 2)), adj = 0)
+##%         dev.off()
+##%     })
     
     hlines <- c(1, 2, 3, 4, 5, 6)
 
-    tryCatch({
-        ## pdf(file.path(outdir, paste(sample.name, ".", bin.size, ".wg.nobad.quantal.pdf", sep = "")), height = 149/25.4, width = 298/25.4)
-        png(file.path(outdir, paste(sample.name, ".", bin.size, ".wg.nobad.quantal.png", sep = "")), height = 149, width = 298, units = "mm", res = 350) 
-        plot(x = thisRatioNobig$abspos, y = thisRatioNobig$ratio.quantal,
-             log = "y", main = paste(sample.name, alt.sample.name),
-             xaxt = "n", xlab = "Genome Position Gb", ylab = "Ratio Quantal", col = "#CCCCCC", cex = 0.4)
-        axis(1, at = chr.at, labels = chr.text, cex = 0.8, tick = FALSE)
-        lines(x = thisRatioNobig$abspos, y = thisRatioNobig$ratio.quantal, col = "#CCCCCC", lwd = 0.8)
-        points(x = thisRatioNobig$abspos, y = thisRatioNobig$seg.quantal, col = "#D40000", cex = 0.8)
-        lines(x = thisRatioNobig$abspos, y = thisRatioNobig$seg.quantal, col = "#D40000")
-        abline(h = hlines, lty = 3)
-        abline(v = vlines, lty = 3)
-        mtext(text = paste("Ploidy =", thisMultiplier, "; ",
-                           "Total Reads =", bam.stats$TotalReads, "; ",
-                           "Reads Kept =", bam.stats$ReadsKept, "; ",
-                           "Median Bin Count =", bam.stats$MedianBinCount, "; ",
-                           "MAPD =", round(mapd.qc["mapd"],2), "+/-", round(mapd.qc["mapd.sd"], 2), "; ",
-                           "Avg. Genome Coverage =", format(bam.stats$GenomeCoverage, digits = 2)), adj = 0)
-        dev.off()
-    })
+##%     tryCatch({
+##%         pdf(file.path(outdir, paste(sample.name, ".", bin.size, ".wg.nobad.quantal.pdf", sep = "")), height = 149/25.4, width = 298/25.4)
+##%          png(file.path(outdir, paste(sample.name, ".", bin.size, ".wg.nobad.quantal.png", sep = "")), height = 149, width = 298, units = "mm", res = 350) 
+##%         plot(x = thisRatioNobig$abspos, y = thisRatioNobig$ratio.quantal,
+##%              log = "y", main = paste(sample.name, alt.sample.name),
+##%              xaxt = "n", xlab = "Genome Position Gb", ylab = "Ratio Quantal", col = "#CCCCCC", cex = 0.4)
+##%         axis(1, at = chr.at, labels = chr.text, cex = 0.8, tick = FALSE)
+##%         lines(x = thisRatioNobig$abspos, y = thisRatioNobig$ratio.quantal, col = "#CCCCCC", lwd = 0.8)
+##%         points(x = thisRatioNobig$abspos, y = thisRatioNobig$seg.quantal, col = "#D40000", cex = 0.8)
+##%         lines(x = thisRatioNobig$abspos, y = thisRatioNobig$seg.quantal, col = "#D40000")
+##%         abline(h = hlines, lty = 3)
+##%         abline(v = vlines, lty = 3)
+##%         mtext(text = paste("Ploidy =", thisMultiplier, "; ",
+##%                            "Total Reads =", bam.stats$TotalReads, "; ",
+##%                            "Reads Kept =", bam.stats$ReadsKept, "; ",
+##%                            "Median Bin Count =", bam.stats$MedianBinCount, "; ",
+##%                            "MAPD =", round(mapd.qc["mapd"],2), "+/-", round(mapd.qc["mapd.sd"], 2), "; ",
+##%                            "Avg. Genome Coverage =", format(bam.stats$GenomeCoverage, digits = 2)), adj = 0)
+##%         dev.off()
+##%     })
     
-    write.table(thisQuantalStatsNobad, sep = "\t", file = file.path(outdir, paste(sample.name, ".grch37.", bin.size, ".k50.nobad.varbin.quantal.stats.txt", sep = "")), quote = FALSE, row.names = FALSE) 
-    write.table(thisRatioNobig, sep = "\t", file = file.path(outdir, paste(sample.name, ".grch37.", bin.size, ".k50.nobad.varbin.data.txt", sep = "")), quote = FALSE, row.names = FALSE) 
-    write.table(thisShort, sep = "\t", file = file.path(outdir, paste(sample.name, ".grch37.", bin.size, ".k50.nobad.varbin.short.txt", sep = "")), quote = FALSE, row.names = FALSE) 
+##%     write.table(thisQuantalStatsNobad, sep = "\t", file = file.path(outdir, paste(sample.name, ".grch37.", bin.size, ".k50.nobad.varbin.quantal.stats.txt", sep = "")), quote = FALSE, row.names = FALSE) 
+##%     write.table(thisRatioNobig, sep = "\t", file = file.path(outdir, paste(sample.name, ".grch37.", bin.size, ".k50.nobad.varbin.data.txt", sep = "")), quote = FALSE, row.names = FALSE) 
+##%     write.table(thisShort, sep = "\t", file = file.path(outdir, paste(sample.name, ".grch37.", bin.size, ".k50.nobad.varbin.short.txt", sep = "")), quote = FALSE, row.names = FALSE) 
     
     
 } ## end cbs.segment01

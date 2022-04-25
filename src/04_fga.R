@@ -2,7 +2,7 @@
 ## R.home() == "/opt/common/CentOS_7/R/R-4.0.0/lib64/R" || stop("Wrong environment, run `module load R/R-4.0.0`")
 
 args <- commandArgs(trailingOnly = TRUE)
-## args <- c("--sample.name=WD5816", "--bin.size=5k", "--io.idr=vbData/", "--fig.dir=figures/", "--aligner=bowtie")
+## args <- c("--sample.name=WD5816", "--bin.size=5k", "--io.dir=vbData/", "--fig.dir=figures/", "--aligner=bowtie")
 
 ## Default setting when no arguments passed
 if(length(args) < 1) {
@@ -49,9 +49,7 @@ if(! dir.exists(argsL$io.dir)) {
 }
 
 ## Arg3 default
-if(! dir.exists(argsL$fig.dir)) {
-    dir.create(argsL$fig.dir)
-}
+dir.exists(argsL$fig.dir) || dir.create()
 
 ## libraries and resources
 library(copynumber)
@@ -59,6 +57,7 @@ source("src/myLib.R")
 
 ## run parameters
 sample.name <- argsL$sample.name
+
 inDir  <- file.path(argsL$io.dir)
 outDir <- file.path(argsL$io.dir)  ## -- will be used as input in 06_vbHeatmap.R
 figDir <- file.path(argsL$fig.dir)
@@ -120,11 +119,23 @@ mb20L <- as.data.frame(table(seg5k[seg5k$mean == 0 & seg5k$chrom != 24 & seg5k$s
 if(nrow(mb20L) != 0) names(mb20L) <- c("cellID", "n.segments.20mb.deletion")
 
 ## merging to alteration summary
-if(nrow(mb20) != 0)  alterationSummary <- merge(alterationSummary, mb20, by = "cellID", all = TRUE)
-if(nrow(mb20L) != 0) alterationSummary <- merge(alterationSummary, mb20L, by = "cellID", all = TRUE)
+if(nrow(mb20) != 0)  {
+    alterationSummary <- merge(alterationSummary, mb20, by = "cellID", all = TRUE)
+} else {
+    alterationSummary$n.segments.altered.20mb <- 0
+}
+    
+
+if(nrow(mb20L) != 0) {
+    alterationSummary <- merge(alterationSummary, mb20L, by = "cellID", all = TRUE)
+} else {
+    alterationSummary$n.segments.20mb.deletion <- 0
+}
 
 ## test this first
-if(!"n.segments.20mb.deletion" %in% names(alterationSummary)) alterationSummary$n.segments.20mb.deletion <- 0
+## if(!"n.segments.20mb.deletion" %in% names(alterationSummary)) {
+##     alterationSummary$n.segments.20mb.deletion <- 0
+##}
 
 ## FGA = Fraction of Genome Altered / proportion of the genome not in diploid state
 ## usisng goldenPath genome length
