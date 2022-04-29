@@ -24,7 +24,7 @@ fastq files.  Built for use with LSF or direct `bash` command line with LSF envi
    - MultiQC
 
 * Visualization 
-   - Complex Heatmap
+   - R/Complex Heatmap
    - IGV
 
 * Analysis
