@@ -24,7 +24,10 @@ echo $MID
 OUT=$3
 [[ ! -z "$OUT" ]] || OUT=bowtie_out/
 
+## get BAM
+BAM=$(find $OUT  -name "${MID}.*md.bam")
+
 [ -d preseq ] || mkdir preseq
 
-preseq c_curve -B $OUT/${MID}.md.bam > preseq/${MID}.preseq.c_curve 2> log/${MID}/$(date "+%Y%m%d-%H%M%S").preseq.c_curve.log
+preseq c_curve -B ${BAM} > preseq/${MID}.preseq.c_curve 2> log/${MID}/$(date "+%Y%m%d-%H%M%S").preseq.c_curve.log
 if [ $? -eq 0 ] ; then echo "preseq c_curve succesfull" ; else exit 9 ; fi

@@ -28,8 +28,12 @@ ALIGNER=$(echo $OUT | sed -e 's/_.*//' -e 's:/::g')
 ##   echo "It's there."
 ## fi
 
+## get BAM
+BAM=$(find $OUT  -name "${MID}.*md.bam")
+
+
 [ -d idxstats ] || mkdir idxstats
 
-samtools idxstats -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.md.bam > idxstats/${MID}.${ALIGNER}.idxstats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_idxstats.log
+samtools idxstats -@ $LSB_MAX_NUM_PROCESSORS ${BAM} > idxstats/${MID}.${ALIGNER}.idxstats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_idxstats.log
 
 

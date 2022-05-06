@@ -1,6 +1,26 @@
 #!/bin/bash
-#BSUB -n 3 -R "rusage[mem=3]" -R "hosts[span=1]" -W 89
+#BSUB -n 3 -R "rusage[mem=3]" -R "hosts[span=1]" -W 358
+#<usage>
+[[ $# -gt 0 ]] || {
+    echo "Description:"
+    echo "This script to runs the VARBIN algorithm on 5k, 20k, and 50k bins in the"
+    echo " GRCh37 reference genome.  It calculates ploidy within the specified range"
+    echo " using LOWESS least square means (ginkgo single-cell method)."
+    echo ""
+    echo "Usage:"    
+    echo "This script expects a bam file as the first argument, file extension as the"
+    echo " second argument; and the ploidy range as \`min' \`max' on the third and"
+    echo " fourth arguments, respectively."
+    echo ""
+    echo "Example:"
+    echo "bsub -n 3 -M 3 -W 89 ./src/02_varbin.sh path/to/file.dd.bam .bam 1.5 4.8"
+    echo ""
+    exit 1;
+}
+#</usage>
 
+## suggestions from:
+## https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -e -x -o pipefail -u
 
 VARBIN=$HOME/genomes/homo_sapiens/Ensembl/GRCh37.p13/Sequence/varbin/

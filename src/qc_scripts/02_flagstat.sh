@@ -24,9 +24,12 @@ echo $MID
 OUT=$3
 [[ ! -z "$OUT" ]] || OUT=bowtie_out/
 
-
 ALIGNER=$(echo $OUT | sed -e 's/_.*//' -e 's:/::g')
+
+## get BAM
+BAM=$(find $OUT  -name "${MID}.*md.bam")
+
 
 [ -d flagstats ] || mkdir flagstats
 
-samtools flagstat -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.md.bam > flagstats/${MID}.${ALIGNER}.flagstat  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_flagstat.log
+samtools flagstat -@ $LSB_MAX_NUM_PROCESSORS ${BAM} > flagstats/${MID}.${ALIGNER}.flagstat  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_flagstat.log

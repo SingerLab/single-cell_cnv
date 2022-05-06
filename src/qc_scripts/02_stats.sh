@@ -26,6 +26,9 @@ OUT=$3
 
 ALIGNER=$(echo $OUT | sed -e 's/_.*//' -e 's:/::g')
 
+## get BAM
+BAM=$(find $OUT  -name "${MID}.*md.bam")
+
 [ -d stats ] || mkdir stats
 
-samtools stats -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.md.bam > stats/${MID}.${ALIGNER}.samtools.stats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_stats.log
+samtools stats -@ $LSB_MAX_NUM_PROCESSORS ${BAM} > stats/${MID}.${ALIGNER}.samtools.stats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_stats.log

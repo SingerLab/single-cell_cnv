@@ -26,7 +26,8 @@
 }
 #</usage>
 
-## suggestions from https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
+## suggestions from:
+## https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -E -e -x -u -o pipefail
 
 ## trap read debug

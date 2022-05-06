@@ -26,9 +26,13 @@ OUT=$3
 
 ALIGNER=$(echo $OUT | sed -e 's/_.*//' -e 's:/::g')
 
+## get BAM
+BAM=$(find $OUT  -name "${MID}.*md.bam")
+
+
 [ -d bamqc ] || mkdir bamqc
 
 unset DISPLAY
-qualimap bamqc -nt $LSB_MAX_NUM_PROCESSORS -bam $OUT/${MID}.md.bam -gd HUMAN -outdir bamqc/${MID}/ -outfile ${MID}.${ALIGNER}.pdf -outformat "PDF:HTML"  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").qualimap_bamqc.log
+qualimap bamqc -nt $LSB_MAX_NUM_PROCESSORS -bam ${BAM} -gd HUMAN -outdir bamqc/${MID}/ -outfile ${MID}.${ALIGNER}.pdf -outformat "PDF:HTML"  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").qualimap_bamqc.log
 if [ $? -eq 0 ] ; then echo "qualimap succesfull" ; else exit 8 ; fi
 
