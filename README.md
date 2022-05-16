@@ -34,9 +34,9 @@ fastq files.  Built for use with LSF or direct `bash` command line with LSF envi
 
 ### steps for single-end 50bp
 1. run ./src/bdplex/barcode.bsplit.sh
-2. QC fastq files
+2. QC fastq files (e.g ./src/01_fastq_qc.sh)
 3. run ./src/01_bowtie.sc.map.sh ## automatically launches 02_varbin.sh
-4. QC bam files
+4. QC bam files (e.g. ./src/02_bam_qc.sh)
 5. run ./src/03_vbData.sh
 
 
