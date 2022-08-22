@@ -23,6 +23,6 @@ paste  <( echo $1 )  <(ls $2/*gz | wc -l) \
        <( ls varbin50k/*k50.varbin.data.txt | wc -l ) \
        <( echo $(( $(wc -l vbData/*.50k.k50.varbin.mapd.qc.txt | cut -d ' ' -f 1 ) -1 )) ) \
        <( echo $(( $(wc -l vbData/*.50k.k50.varbin.quantal.ploidy.txt | cut -d ' ' -f 1 ) -1 )) ) \
-       <( echo $(( $(head -n 1 vbData/*.5k.k50.varbin.data.txt | awk '{print NF}') -3 )) ) \
-       <( echo $(( $(head -n 1 vbData/*.20k.k50.varbin.data.txt | awk '{print NF}') -3 )) ) \
-       <( echo $(( $(head -n 1 vbData/*.50k.k50.varbin.data.txt | awk '{print NF}') -3 )) ) | tr ' ' "\t"
+       <( echo $(( $(zcat vbData/*.5k.k50.varbin.data.txt.gz | head -n 1 | awk '{print NF}') -3 )) ) \
+       <( echo $(( $(zcat vbData/*.20k.k50.varbin.data.txt.gz | head -n 1 | awk '{print NF}') -3 )) ) \
+       <( echo $(( $(zcat vbData/*.50k.k50.varbin.data.txt.gz | head -n 1 | awk '{print NF}') -3 )) ) | tr ' ' "\t"

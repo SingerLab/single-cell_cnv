@@ -41,8 +41,8 @@ echo "sequence.quality per.sequence.quality per.sequence.gc per.base.N sequence.
 
 wait ${!}
 
-echo "starting geneCN"
-Rscript ./src/04_geneCN.R --sample.name=${MID} --io.dir=vbData --fig.dir=figures --aligner=${ALIGNER} &
+## echo "starting geneCN"
+## Rscript ./src/04_geneCN.R --sample.name=${MID} --io.dir=vbData --fig.dir=figures --aligner=${ALIGNER} &
 echo "estimating FGA"
 Rscript ./src/04_fga.R --sample.name=${MID} --bin.size=5k --io.dir=vbData --fig.dir=figures --aligner=${ALIGNER} &
 echo "simple heatmap"
@@ -74,6 +74,6 @@ echo bioID n.fq.gz n.dd.bam n.bamqc n.fastp n.fastqc n.fastq_screen n.flagstat n
 	   <( ls varbin50k/*.varbin.data.txt | wc -l ) \
 	   <( echo $(( $(wc -l vbData/*.50k.k50.varbin.mapd.qc.txt | cut -d ' ' -f 1 ) -1 )) ) \
 	   <( echo $(( $(wc -l vbData/*.50k.k50.varbin.quantal.ploidy.txt | cut -d ' ' -f 1 ) -1 )) ) \
-	   <( echo $(( $(head -n 1 vbData/*.5k.k50.varbin.data.txt | awk '{print NF}') -3 )) ) \
-	   <( echo $(( $(head -n 1 vbData/*.20k.k50.varbin.data.txt | awk '{print NF}') -3 )) ) \
-	   <( echo $(( $(head -n 1 vbData/*.50k.k50.varbin.data.txt | awk '{print NF}') -3 )) ) | tr ' ' "\t" >> processed.files.txt 
+	   <( echo $(( $(zcat vbData/*.5k.k50.varbin.data.txt.txt | head -n 1 | awk '{print NF}') -3 )) ) \
+	   <( echo $(( $(zcat -n 1 vbData/*.20k.k50.varbin.data.txt.gz | head -n 1  | awk '{print NF}') -3 )) ) \
+	   <( echo $(( $(zcat -n 1 vbData/*.50k.k50.varbin.data.txt.gz | head -n 1  | awk '{print NF}') -3 )) ) | tr ' ' "\t" >> processed.files.txt 

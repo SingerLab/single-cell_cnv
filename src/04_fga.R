@@ -49,7 +49,7 @@ if(! dir.exists(argsL$io.dir)) {
 }
 
 ## Arg3 default
-dir.exists(argsL$fig.dir) || dir.create()
+dir.exists(argsL$fig.dir) || dir.create(argsL$fig.dir)
 
 ## libraries and resources
 library(copynumber)
@@ -68,8 +68,8 @@ bulk.pattern <- "bulk"
 dir.exists(figDir) || dir.create(figDir)
 
 ## read in matrix data -- re-bulild seg file to have copy number data instead of ratios
-cn5k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
-lr5k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.lowratio.data.txt", sep = "")), header = TRUE, as.is = TRUE)
+cn5k <- read.delim(gzfile(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.data.txt.gz", sep = ""))), header = TRUE, as.is = TRUE)
+lr5k <- read.delim(gzfile(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.lowess.data.txt.gz", sep = ""))), header = TRUE, as.is = TRUE)
 ## seg5k <- read.table(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.short.cbs.seg", sep = "")), header = FALSE, col.names = c("cellID", "chrom", "start", "end", "nmark", "ratio"), as.is = TRUE)
 
 ## load excluded cells

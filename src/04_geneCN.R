@@ -60,9 +60,9 @@ bulk.pattern <- "bulk"
 
 
 ## load copy number data
-cn50k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.50k.k50.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
+cn50k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.50k.k50.varbin.data.txt.gz", sep = "")), header = TRUE, as.is = TRUE)
 
-gene.index.50k <- read.delim("res/varbin/grch37.50k.gene.index.txt", as.is = TRUE)
+gene.index.50k <- read.delim("res/varbin/grch37.50k.gene.index.txt.gz", as.is = TRUE)
 
 ## expanding from bin data to gene data
 gene50k.hgnc <- expand2genes(cn50k[, -c(1:3)], gene.index.50k)

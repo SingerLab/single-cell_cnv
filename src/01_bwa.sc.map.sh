@@ -109,7 +109,7 @@ if [ $? -eq 0 ] ; then rm $OUT/${MID}.sorted.bam{,.bai} ${OUT}/${MID}.bam{,.ok} 
 
 samtools index -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${MARKDUP_BAM_EXT}
 
-
+#% 
 #% ## additional metrics and QC
 #% for i in fastp metrics idxstats stats fastq_screen flagstats preseq bamqc fastqc ; do [ -d $i ] || mkdir $i ; done
 #% 

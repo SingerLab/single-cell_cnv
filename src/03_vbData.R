@@ -119,8 +119,8 @@ cat("selecting and writing quantals")
 csq.df <- select_vbd_column(vbd = vbd, column = "cbs.seg.quantal",
                                         coord = chh)
 write.table(csq.df,
-            file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
-                                           ".k50.varbin.data.txt", sep = "")),
+            file = gzfile(file.path(outDir, paste(sample.name, "_grch37.", bin.size,
+                                           ".k50.varbin.data.txt.gz", sep = ""))),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 rm(csq.df)
 

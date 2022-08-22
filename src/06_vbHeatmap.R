@@ -118,21 +118,21 @@ write.table(mapd.qc$cellID[mapd.qc$mapd > 0.45 & mapd.qc$nbins == "50k"], file =
 
 ## Read in copy number data
 ## 5k
-cn5k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "5k", ".k50.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
+cn5k <- read.delim(gzfile(file.path(inDir, paste(sample.name, "_grch37.", "5k", ".k50.varbin.data.txt.gz", sep = ""))), header = TRUE, as.is = TRUE)
 cn5k$chrompos <- cn5k$chrompos + 1
 cn5k$abspos <- cumsum(cn5k$chrompos)
 
 ## 20k
-cn20k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "20k", ".k50.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
+cn20k <- read.delim(gzfile(file.path(inDir, paste(sample.name, "_grch37.", "20k", ".k50.varbin.data.txt.gz", sep = ""))), header = TRUE, as.is = TRUE)
 cn20k$chrompos <- cn20k$chrompos + 1
 cn20k$abspos <- cumsum(cn20k$chrompos)
 
 ## 50k
-cn50k <- read.delim(file.path(inDir, paste(sample.name, "_grch37.", "50k", ".k50.varbin.data.txt", sep = "")), header = TRUE, as.is = TRUE)
+cn50k <- read.delim(gzfile(file.path(inDir, paste(sample.name, "_grch37.", "50k", ".k50.varbin.data.txt.gz", sep = ""))), header = TRUE, as.is = TRUE)
 cn50k$chrompos <- cn50k$chrompos + 1
 cn50k$abspos <- cumsum(cn50k$chrompos)
 
-## load excluded cells
+## pull cell names
 indiv <- names(cn50k[, 4:ncol(cn50k)])
 
 ## shared heatmap annotations -- chromosome color
@@ -147,7 +147,6 @@ chrAnno50k <- rowAnnotation(chrom = rep(c(1:22, "X", "Y"), as.numeric(table(cn50
 mapd.5k$mapd.ok <- ifelse(mapd.5k$mapd <= 0.45, yes = "PASS", no = "No-pass")
 mapd.20k$mapd.ok <- ifelse(mapd.20k$mapd <= 0.45, yes = "PASS", no = "No-pass")
 mapd.50k$mapd.ok <- ifelse(mapd.50k$mapd <= 0.45, yes = "PASS", no = "No-pass")
-
 
 ## MAPD anno
 hAnno5k <- HeatmapAnnotation(mapd = mapd.5k$mapd, ReadsKept = vbStats$ReadsKept/1000000, MedianBinCount  = vbStats$MedianBinCount, mapd.qc = mapd.5k$mapd.ok)
@@ -167,7 +166,7 @@ h5k <- Heatmap(parctan(as.matrix(cn5k[, indiv])),
                show_column_names = FALSE,
                top_annotation = hAnno5k,
                left_annotation = chrAnno5k,
-               row_labels = chrLabels,
+               row_labels = cn5k$chrom,
                row_split = cn5k$chrom,
                row_gap = unit(0, "mm"),               
                col = arcCol,
@@ -180,7 +179,7 @@ h20k <- Heatmap(parctan(as.matrix(cn20k[, indiv])),
                show_column_names = FALSE,
                top_annotation = hAnno20k,
                left_annotation = chrAnno20k,
-               row_labels = chrLabels,
+               row_labels = cn20k$chrom,
                row_split = cn20k$chrom,
                row_gap = unit(0, "mm"),               
                col = arcCol,
@@ -193,7 +192,7 @@ h50k <- Heatmap(parctan(as.matrix(cn50k[, indiv])),
                show_column_names = FALSE,
                top_annotation = hAnno50k,
                left_annotation = chrAnno50k,
-               row_labels = chrLabels,
+               row_labels = cn50k$chrom,
                row_split = cn50k$chrom,
                row_gap = unit(0, "mm"),               
                col = arcCol,
@@ -204,6 +203,7 @@ draw(h5k, annotation_legend_list = packLegend(la))
 draw(h20k, annotation_legend_list = packLegend(la))
 draw(h50k, annotation_legend_list = packLegend(la))
 dev.off()
+
 
 
 
