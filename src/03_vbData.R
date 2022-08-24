@@ -6,7 +6,8 @@ source("src/myLib.R")
 
 ## Collect arguments
 args <- commandArgs(trailingOnly = TRUE)
-## args <- c("--sample.name=WD1544", "--input.dir=varbin5k/", "--output.dir=vbData/", "--bin.size=5k", "--aligner=bowtie")
+#' for debugging:
+#' args <- c("--sample.name=WD1544", "--input.dir=varbin5k/", "--output.dir=vbData/", "--bin.size=5k", "--aligner=bowtie", "--overwrite.annotations=FALSE")
 
 ## Default setting when no arguments passed
 if(length(args) < 1) {
@@ -24,6 +25,7 @@ if("--help" %in% args) {
       --output.dir=vbData                    - character, path to varbin genome reference files
       --bin.size=(5k,20,50k)                 - character, total bins to compile 5k, 20k, 50k
       --aligner=bowtie                       - character, bin size in kb for the analysis
+      --overwrite.annotations=FALSE          - logical, weather to overwrite the cell annotations or not
       --help                                 - print this text
  
       Example:
@@ -66,6 +68,11 @@ if(! argsL$bin.size %in% c("50k", "20k", "5k")) {
     q(save = "no")
 }
 
+## Arg5 default
+if(is.null(argsL$overwrite.annotations)) {
+    argsL$overwrite.annotations <- FALSE
+}
+
 
 ## retrieving data into matrices
 ## Run parameters
@@ -74,7 +81,7 @@ inDir  <- file.path(argsL$input.dir)
 outDir <- file.path(argsL$output.dir)
 bin.size <- argsL$bin.size
 aligner <- argsL$aligner
-
+overwrite.annotations <- argsL$overwrite.annotations
 ## load copy number data
 cell.files <- list.files(path = inDir,
                          pattern = paste(".grch37.", bin.size,
@@ -83,7 +90,23 @@ cell.files <- list.files(path = inDir,
 xx <- do.call(rbind, strsplit(cell.files, split = "\\."))
 ## reconstruct cell id
 cell.list <- paste(xx[,1], xx[,2], sep = ".")
-                  
+
+cellAnnot <- data.frame(cellID = cell.list,
+                        plate = xx[,1],
+                        subsample = gsub("(.*)_(.*)_(.*)", "\\1_\\2", xx[,1]),
+                        sampleID =  gsub("(.*)_(.*)_(.*)", "\\1[PRM]", xx[,1]),
+                        bioID =   gsub("(.*)_(.*)_(.*)", "\\1", xx[,1]),
+                        subtype = NA,
+                        mold.histology = NA,
+                        mold.grade = NA,
+                        mold.viability = NA,
+                        mold.appearance = NA,
+                        barcode = xx[,2],
+                        sample.type = NA,
+                        gate = NA,
+                        path.comments = NA,
+                        row.names = cell.list)
+
 ## get coordinate data
 chh = read.table(file.path(inDir, cell.files[1]),
                  header = TRUE)[,1:3]
@@ -223,6 +246,32 @@ write.table(igv.seg,
                              paste(sample.name, "_grch37.", bin.size,
                                    ".k50.varbin.short.cbs.seg", sep = "")),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
+
+annotation.file = file.path(outDir, paste0(sample.name, "_annotations.txt"))
+    
+## conditional if exists
+if(overwrite.annotations) {
+    write.table(cellAnnot,
+                file = annotation.file,                       
+                row.names = TRUE, quote = FALSE, sep = "\t",
+                na = "")
+    message("vbData finished succesfully, w/ annotations overwritten")
+} else {
+    if(!file.exists(annotation.file)) {
+    write.table(cellAnnot,
+                file = annotation.file,                       
+                row.names = TRUE, quote = FALSE, sep = "\t",
+                na = "")
+    message("vbData finished succesfully, w/ new annotations created")
+    } else {
+        message("vbData finished succesfully, prev. annotations preserved")
+    }
+}
+
+        
+
+
+   
 
 # extract gc.content from the first file
 #% gc.content <- select_vbd_column(vbd = vbd, column = "gc.content")
