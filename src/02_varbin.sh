@@ -51,7 +51,8 @@ MAX=$4
 
 wait
 
-module load R/R-3.5.2
+module load R/R-4.0.5
+## module load R/R-3.5.2
 ## source /home/gularter/opt/miniconda3/bin/activate single-cell-cnv
  
 Rscript ./src/cbs.r --genomePath=$VARBIN --cell.varbin=${OUT50}/${MID}.50k.varbin.out.txt --seq.stats=${OUT50}/${MID}.50k.varbin.stats.txt --bin.size=50k --ploidy.range=${MIN},${MAX} &
@@ -60,3 +61,4 @@ Rscript ./src/cbs.r --genomePath=$VARBIN --cell.varbin=${OUT5}/${MID}.5k.varbin.
 
 wait
 
+## __EOF__

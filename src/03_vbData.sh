@@ -13,7 +13,7 @@
     echo ""
     echo "Example:"
     echo ""
-    echo " bsub -Is -n 3 -M 3 -W 389./src/03_vbData.sh WD5816 bowtie"
+    echo " bsub -Is -n 3 -M 3 -W 389 ./src/03_vbData.sh WD5816 bowtie"
     echo ""
     exit 1;
 }
@@ -36,8 +36,8 @@ do
     Rscript ./src/03_vbData.R  --sample.name=${MID} --input.dir=varbin${i} --output.dir=vbData --bin.size=${i} --aligner=${ALIGNER} &
 done
 
-echo "sequence.quality per.sequence.quality per.sequence.gc per.base.N sequence.duplication overrepresented.sequences" | tr " " "\t" > vbData/exclude.failed.txt
-echo "sequence.quality per.sequence.quality per.sequence.gc per.base.N sequence.duplication overrepresented.sequences" | tr " " "\t" > vbData/exclude.warnings.txt
+echo "sequence.quality per.sequence.quality per.sequence.gc per.base.N sequence.duplication overrepresented.sequences" | tr " " "\t" > vbData/${MID}_exclude.failed.txt
+echo "sequence.quality per.sequence.quality per.sequence.gc per.base.N sequence.duplication overrepresented.sequences" | tr " " "\t" > vbData/${MID}_exclude.warnings.txt
 
 wait ${!}
 
@@ -52,28 +52,5 @@ wait ${!}
 
 set +x
 
-date >> processed.files.txt
-echo bioID n.fq.gz n.dd.bam n.bamqc n.fastp n.fastqc n.fastq_screen n.flagstat n.idxstat n.markdup n.aln.metrics n.cycle.metrics n.dist.metrics n.preseq.curve n.presec.extrap n.stats n.5k.quantal n.20k.quantal n.50k.quantal n.mapd.qc n.ploidy n.5k.cells n.20k.cells n.50k.cells | tr ' ' "\t" >> processed.files.txt && \
-    paste  <( echo $MID )  <(ls bsplit/*gz | wc -l) \
-	   <(ls bowtie_out/*dd.bam | wc -l) \
-	   <( ls bamqc/ | wc -l ) \
-	   <( ls fastp/*ok | wc -l ) \
-	   <( ls fastqc/*zip | wc -l ) \
-	   <( ls fastq_screen/*html | wc -l ) \
-	   <( ls flagstats/ | wc -l ) \
-	   <( ls idxstats/ | wc -l ) \
-	   <( ls metrics/*markdups | wc -l )  \
-	   <( ls metrics/*alignment_summary_metrics | wc -l ) \
-	   <( ls metrics/*quality_by_cycle_metrics | wc -l ) \
-	   <( ls metrics/*quality_distribution_metrics | wc -l ) \
-	   <( ls preseq/*c_curve | wc -l ) \
-	   <( ls preseq/*lc_extrap | wc -l ) \
-	   <( ls stats/*stats | wc -l) \
-	   <( ls varbin5k/*.varbin.data.txt | wc -l ) \
-	   <( ls varbin20k/*.varbin.data.txt | wc -l )  \
-	   <( ls varbin50k/*.varbin.data.txt | wc -l ) \
-	   <( echo $(( $(wc -l vbData/*.50k.k50.varbin.mapd.qc.txt | cut -d ' ' -f 1 ) -1 )) ) \
-	   <( echo $(( $(wc -l vbData/*.50k.k50.varbin.quantal.ploidy.txt | cut -d ' ' -f 1 ) -1 )) ) \
-	   <( echo $(( $(zcat vbData/*.5k.k50.varbin.data.txt.txt | head -n 1 | awk '{print NF}') -3 )) ) \
-	   <( echo $(( $(zcat -n 1 vbData/*.20k.k50.varbin.data.txt.gz | head -n 1  | awk '{print NF}') -3 )) ) \
-	   <( echo $(( $(zcat -n 1 vbData/*.50k.k50.varbin.data.txt.gz | head -n 1  | awk '{print NF}') -3 )) ) | tr ' ' "\t" >> processed.files.txt 
+echo "##" `date` >> processed.files.txt
+./src/00_processed.files.sh $MID wsplit/ bowtie_out/ >> processed.files.txt

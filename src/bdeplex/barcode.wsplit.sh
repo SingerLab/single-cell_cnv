@@ -1,5 +1,5 @@
 #!/bin/bash
-#BSUB -n 1 -M 12 -W 48:00
+#BSUB -n 1 -M 6 -W 120:00
 #<usage>
 [[ $# -gt 0 ]] || {
     echo "Description:"
@@ -11,13 +11,18 @@
     echo " the FASTQ extension as the second e.g. _001.fastq.gz, .fq.gz;"
     echo " the output directory name as the third argument"
     echo ""
+    echo "resource check w/ `/usr/bin/time -v`"
+    echo "wannaAln:   2000 Kb == 2Mb"
+    echo "zcat | awk | wc -l : 600 Kb .6 Mb"
+    echo "bsub memory request set to 4 Gb"
+    echo ""
     echo "Example:"
-    echo "bsub -n 1 -M 12 -W 89 ./src/bdplex/barcode.wsplit.sh path/to/Sample_R1_001.fastq.gz _R1_001.fastq.gz wsplit/"
-    echo "bsub -J 'wsplit[1-1500]' -n 1 -M 12 -W 356 ./src/bdplex/barcode.wsplit.sh path/to/Sample_R1_001.fastq.gz _R1_001.fastq.gz wsplit/"
+    echo "bsub -n 1 -M 4 -W 89 ./src/bdplex/barcode.wsplit.sh path/to/Sample_R1_001.fastq.gz _R1_001.fastq.gz wsplit/"
+    echo "bsub -J 'wsplit[1-1500]' -n 1 -M 4 -W 356 ./src/bdplex/barcode.wsplit.sh path/to/Sample_R1_001.fastq.gz _R1_001.fastq.gz wsplit/"
     echo ""
     echo "Alternatively it accepts LSB_JOBINDEX as an environment variable to run"
     echo " specific files"
-    echo "bsub -n 1 -M 12 -W 89 LSB_JOBINDEX=9 ./src/bdplex/barcode.wsplit.sh path/to/Sample_R1_001.fastq.gz _R1_001.fastq.gz wsplit/"
+    echo "bsub -n 1 -M 4 -W 89 LSB_JOBINDEX=9 ./src/bdplex/barcode.wsplit.sh path/to/Sample_R1_001.fastq.gz _R1_001.fastq.gz wsplit/"
     echo ""
     exit 1;
 }

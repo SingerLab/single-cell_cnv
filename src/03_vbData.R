@@ -33,7 +33,6 @@ if("--help" %in% args) {
       Rscript src/06_vbData.R --sample.name=WD5816 --input.dir=varbin20k/ --output.dir=vbData/ --bin.size=20k --aligner=bowtie
       Rscript src/06_vbData.R --sample.name=WD5816 --input.dir=varbin5k/ --output.dir=vbData/ --bin.size=5k --aligner=bowtie
 ")
- 
   q(save="no")
 }
 
@@ -106,6 +105,27 @@ cellAnnot <- data.frame(cellID = cell.list,
                         gate = NA,
                         path.comments = NA,
                         row.names = cell.list)
+annotation.file <- file.path(outDir, paste0(sample.name, "_annotations.txt"))
+
+## conditional if exists
+if(overwrite.annotations) {
+    write.table(cellAnnot,
+                file = annotation.file,                       
+                row.names = TRUE, quote = FALSE, sep = "\t",
+                na = "")
+    message("vbData finished succesfully, w/ annotations overwritten")
+} else {
+    if(!file.exists(annotation.file)) {
+    write.table(cellAnnot,
+                file = annotation.file,                       
+                row.names = TRUE, quote = FALSE, sep = "\t",
+                na = "")
+    message("vbData finished succesfully, w/ new annotations created")
+    } else {
+        message("vbData finished succesfully, prev. annotations preserved")
+    }
+}
+
 
 ## get coordinate data
 chh = read.table(file.path(inDir, cell.files[1]),
@@ -247,31 +267,6 @@ write.table(igv.seg,
                                    ".k50.varbin.short.cbs.seg", sep = "")),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
 
-annotation.file = file.path(outDir, paste0(sample.name, "_annotations.txt"))
-    
-## conditional if exists
-if(overwrite.annotations) {
-    write.table(cellAnnot,
-                file = annotation.file,                       
-                row.names = TRUE, quote = FALSE, sep = "\t",
-                na = "")
-    message("vbData finished succesfully, w/ annotations overwritten")
-} else {
-    if(!file.exists(annotation.file)) {
-    write.table(cellAnnot,
-                file = annotation.file,                       
-                row.names = TRUE, quote = FALSE, sep = "\t",
-                na = "")
-    message("vbData finished succesfully, w/ new annotations created")
-    } else {
-        message("vbData finished succesfully, prev. annotations preserved")
-    }
-}
-
-        
-
-
-   
 
 # extract gc.content from the first file
 #% gc.content <- select_vbd_column(vbd = vbd, column = "gc.content")
@@ -304,3 +299,5 @@ if(overwrite.annotations) {
 #%                                            sep = "")),
 #%             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 #% 
+
+## __EOF__
