@@ -13,7 +13,7 @@ INDIR=$1
 
 echo "cleanup start: " `date` >> ${INDIR}/99_cleanup.log
 
-find ${INDIR}/rawdata/ -name "*Sample*IGO*fastq.gz" -exec rm {} \;
+find ${INDIR}/seqdata/ -name "*Sample*IGO*fastq.gz" -exec rm {} \;
 echo "fastq files have been removed by 99_cleanup.sh" >> ${INDIR}/99_cleanup.log
 
 find ${INDIR}/bowtie_out/ -name "*md.bam" -exec rm {} \;
