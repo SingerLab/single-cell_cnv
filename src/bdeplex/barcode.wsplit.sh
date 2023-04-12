@@ -39,32 +39,48 @@
 #</usage>
 set -e -x -o pipefail -u
 
+## Argument 1 is file.R1.fastq.gz, 
+## R2 is created by substituting _R1 with _R2
 R1=$1
 R2=$( echo ${R1} | sed -e 's/_R1/_R2/' )
 
+## Argument 2 is the file extension to be replaced e.g. ".fastq.gz", ".fq.gz", "_IGO_XXXXX_A_001_R1.fq.gz"
 EXTENSION=$2
 [[ ! -z "$EXTENSION" ]] || EXTENSION=.fastq.gz
 
-X1=$( basename $R1 $EXTENSION )
-
-BWGA192_IDX=( $( cut -f 1 src/bdeplex/index.192.txt ) )
-BWGA192_SEQ=( $( cut -f 2 src/bdeplex/index.192.txt ) )
-
-echo "Searching for" ${BWGA192_IDX[$LSB_JOBINDEX]} ${BWGA192_SEQ[$LSB_JOBINDEX]}
-
+## Argument 3 is output directory
+## if directory does not exist, its created
 OUT=$3
 [[ ! -z "$OUT" ]] || OUT=wsplit/
 [ -d $OUT ] || mkdir -p $OUT
 
+## file basename, removes extension
+## used as prefix for all deplexing
+X1=$( basename $R1 $EXTENSION )
+
+## barcode names and sequences
+## hardcoded and provided here for B-WGA Sets 1-96, and 97 to 192 in a single file
+## only one barcode is searched at a time assigned byt the '$LSB_JOBINDEX' variable
+BWGA192_IDX=( $( cut -f 1 src/bdeplex/index.192.txt ) )
+BWGA192_SEQ=( $( cut -f 2 src/bdeplex/index.192.txt ) )
+
+## output barcode id and sequence
+echo "Searching for" ${BWGA192_IDX[$LSB_JOBINDEX]} ${BWGA192_SEQ[$LSB_JOBINDEX]}
+
 ## if nreads file exists: exit
 [[ ! -f ${OUT}/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.nreads.txt ]] || exit 1
 
+## PE demultiplexing -- core command
 ## use of wannaAln
+## note `-q` is the correct flag for query pattern, not `-p` as in website
+## -m 0 = perfect matching
+## checkpoint if command runs succesfully, an .ok file is produced
 wannaAln -a ${R1} -b ${R2} -x $OUT/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.R1.fq.gz \
 	 -y $OUT/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.R2.fq.gz \
 	 -q ${BWGA192_SEQ[$LSB_JOBINDEX]} -m 0
 if [ $? -eq 0 ] ; then echo `date` ": ${BWGA192_IDX[$LSB_JOBINDEX]} barcode split complete" > $OUT/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.ok ; fi
 
+## Read counts per barcode, both R1 and R2 are counted
 echo ${X1}.${BWGA192_IDX[$LSB_JOBINDEX]} \
      $( zcat ${OUT}/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.R1.fq.gz | awk 'NR%4==1' | wc -l )  \
      $( zcat ${OUT}/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.R2.fq.gz | awk 'NR%4==1' | wc -l ) | \
