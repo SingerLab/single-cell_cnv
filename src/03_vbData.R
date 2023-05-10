@@ -2,6 +2,7 @@
 ## matrix data and seg files from varbin 
 ## which R is being used ! must be in single-cell-cnv environment
 ## R.home() == "/opt/common/CentOS_7/R/R-4.0.0/lib64/R" || stop("Wrong environment, run `module load R`")
+
 source("src/myLib.R")
 
 ## Collect arguments
@@ -229,13 +230,14 @@ rm(quantal.stats, xx, cell.list.qs)
 ## get varbin stats
 cat("reading varbin stats data...\n")
 ## write out cell annotations file
-vb.stats.files <- list.files(inDir, pattern = ".varbin.stats.txt",
+vb.stats.files <- list.files(inDir, pattern = ".varbin.stats.txt$",
                              full.names = TRUE)
 
 xx <- do.call(rbind, strsplit(gsub(paste0("varbin", bin.size, "/"), "",
                                    vb.stats.files), "\\."))
 cell.list.vb <- paste(xx[,1], xx[,2], sep = ".")
 
+assertthat::assert_that(all(sapply(vb.stats.files, file.exists)))
 varbin.stats <- do.call(rbind, lapply(vb.stats.files, read.delim, nrow = 1))
 varbin.stats <- data.frame(cellID = cell.list.vb, varbin.stats)
 
@@ -268,7 +270,7 @@ write.table(igv.seg,
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
 
 
-# extract gc.content from the first file
+# Extract gc.content from the first file
 #% gc.content <- select_vbd_column(vbd = vbd, column = "gc.content")
 ## scale to geometric mean
 #% TARGET_SCALE <- 2^mean(log2(colSums(rbc.df[,-c(1:3)]]+1)))

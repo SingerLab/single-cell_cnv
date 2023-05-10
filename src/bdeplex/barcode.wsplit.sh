@@ -1,5 +1,5 @@
 #!/bin/bash
-#BSUB -n 1 -M 6 -W 120:00
+#BSUB -n 1 -M 6 -W 128:00
 #<usage>
 [[ $# -gt 0 ]] || {
     echo "Description:"

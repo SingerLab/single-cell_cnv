@@ -27,9 +27,11 @@
 }
 #</usage>
 
-## suggestions from https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
+## suggestions from
+## https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -e -x -E -u -o pipefail
 
+## trap read debug
 MAX_MEM_GB=38G
 
 echo "LSB_JOBINDEX: " $LSB_JOBINDEX
@@ -40,9 +42,9 @@ GENOME=$1
 if [ "$GENOME" = "hsa" ]; then
     BWA_INDEX=/juno/depot/pi/resources/genomes/GRCh37/bwa_fasta/b37.fasta
 elif [ "$GENOME" = "pdx" ]; then
-    BWA_INDEX=/work/singer/gularter/genomes/mus_musculus/mm10/Sequence/hg19_mm10_pdx/hg19_mm10.fa
+    BWA_INDEX=/work/singer/genomes/mus_musculus/mm10/Sequence/hg19_mm10_pdx/hg19_mm10.fa
 elif [ "$GENOME" = "mmu" ]; then
-    BWA_INDEX=/work/singer/gularter//genomes/mus_musculus/mm10/Sequence/BWAIndex/GRCm38.p6.fa
+    BWA_INDEX=/work/singer/genomes/mus_musculus/mm10/Sequence/BWAIndex/GRCm38.p6.fa
 fi
 
 ## get fastq files
@@ -65,11 +67,12 @@ MID=$( basename ${R1[$LSB_JOBINDEX]} $EXTENSION | sed -e 's/_IGO.*//' )
 echo $MID
 
 ## BAM extensions
+## PE = Paired-END
 ## ${GENOME}.PE.dd.bam -- change to choose genomes
 DEDUP_BAM_EXT=${GENOME}.PE.dd.bam
 MARKDUP_BAM_EXT=${GENOME}.PE.md.bam
 
-
+## create log files
 [ -d log/$MID ] || mkdir -p log/$MID
 [ -d tmp/ ] || mkdir -p tmp/
 [ -d metrics/ ] || mkdir -p metrics/
@@ -107,10 +110,14 @@ $PICARD MarkDuplicates I=$OUT/${MID}.sorted.bam \
 	log/${MID}/${LSB_JOBID}_$(date "+%Y%m%d-%H%M%S").picard_markdup.log
 if [ $? -eq 0 ] ; then rm $OUT/${MID}.sorted.bam{,.bai} ${OUT}/${MID}.bam{,.ok} ; else exit 6 ; fi
 
-samtools index -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${MARKDUP_BAM_EXT}
+## indexing
+$SAMTOOLS index -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${MARKDUP_BAM_EXT}
 
-#% 
-#% ## additional metrics and QC
+
+#__end__#
+
+
+## additional metrics and QC
 #% for i in fastp metrics idxstats stats fastq_screen flagstats preseq bamqc fastqc ; do [ -d $i ] || mkdir $i ; done
 #% 
 #% $SAMTOOLS flagstat -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.md.bam > flagstats/${MID}.bowtie.flagstat  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_flagstat.log
@@ -135,8 +142,4 @@ samtools index -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${MARKDUP_BAM_EXT}
 #% ## placed here as it often fails
 #% $PICARD CollectMultipleMetrics I=$OUT/${MID}.md.bam O=metrics/$MID R=${BOWTIE_h37}  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").picard_metrics.log
 #% if [ $? -eq 0 ] ; then echo "picard metrics succesfull" ; else exit 13 ; fi
-#% 
-#% 
-#% #
-#% #__end__
 #% 
