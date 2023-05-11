@@ -32,62 +32,86 @@
     echo " estimate 1m per 1M reads for demultiplexing"
     echo ""
     echo "Example:"
-    echo "bsub -n 1 -M 4 -W 89 ./src/bdplex/barcode.wsplit2X.sh path/to/cell.b99R1.fq.gz .R1.fq.gz wsplit_2x/"
-    echo "bsub -J 'wsplit[1-1500]' -n 1 -M 4 -W 356 ./src/bdplex/barcode.wsplit2X.sh path/to/cell.b99.R1.fq.gz .R1.fq.gz wsplit_2x/"
+    echo "bsub -n 1 -M 4 -W 89 ./src/bdplex/barcode.wsplit2X.sh path/to/cell.b99R1.fq.gz .R1.fq.gz wsplit2x/"
+    echo "bsub -J 'wsplit[1-1500]' -n 1 -M 4 -W 356 ./src/bdplex/barcode.wsplit2X.sh path/to/cell.b99.R1.fq.gz .R1.fq.gz wsplit2x/"
     echo ""
     echo "Alternatively it accepts LSB_JOBINDEX as an environment variable to run"
     echo " specific files"
-    echo "bsub -n 1 -M 4 -W 89 LSB_JOBINDEX=9 ./src/bdplex/barcode.wsplit2X.sh path/to/cell.b99.R1.fq.gz .R1.fq.gz wsplit_2x/"
+    echo "bsub -n 1 -M 4 -W 89 LSB_JOBINDEX=9 ./src/bdplex/barcode.wsplit2X.sh path/to/cell.b99.R1.fq.gz .R1.fq.gz wsplit2x/"
     echo ""
     exit 1;
 }
 #</usage>
 set -e -x -o pipefail -u
 
+## qc tool
 FASTQC=/work/singer/opt/miniconda3/bin/fastqc
+## genome reference
 GRCH37="$HOME/cmo_genomes/GRCh37/bwa_fasta/b37.fasta"
 
+## argument 1 R1 file
+## read 1 input
+## read 2 file created by substituting R1 to R2
 R1=$1
 R2=$( echo ${R1} | sed -e 's/.R1./.R2./' )
 
+## extension specification argument 2
 EXTENSION=$2
 [[ ! -z "$EXTENSION" ]] || EXTENSION=.fq.gz
 
+## X1 -- basename of cell 
 X1=$( basename $R1 $EXTENSION )
+
+## barcode 1 substring
 BC1=$( echo $X1 | sed -e 's/.*b/b/' )
 
+## barcode indices
 BWGA192_IDX=( $( cut -f 1 src/bdeplex/index.192.txt ) )
 BWGA192_SEQ=( $( cut -f 2 src/bdeplex/index.192.txt ) )
 
+## barcode 2 substring
 BC2=${BWGA192_IDX[$LSB_JOBINDEX]}
 
+## echoing information
 echo "Searching for" ${BWGA192_IDX[$LSB_JOBINDEX]} ${BWGA192_SEQ[$LSB_JOBINDEX]}
 
+## output directory
 OUT=$3
-[[ ! -z "$OUT" ]] || OUT=wsplit_2x/
+[[ ! -z "$OUT" ]] || OUT=wsplit2x/
 [ -d $OUT ] || mkdir -p $OUT
 
+## -- end of required argument specification
 
+## checkpoint
 ## if nreads file exists: exit
 [[ ! -f ${OUT}/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.chr.counts.txt ]] || exit 1
 
-## build blank reference in case counts file is 0
+## build blank chromosome list to use when cell counts file is 0
 [[ ! -f $(dirname $OUT)/grch37.chr.txt ]] || cut -f 1 ${GRCH37}.fai | sort -V > $(dirname $OUT)/grch37.chr.txt
 
+## demultiplexing previously single-end demultiplexd cell against 1 barcode
+##  specified by $LSB_JOBINDEX
 ## use of wannaAln
 wannaAln -a ${R1} -b ${R2} -x $OUT/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.R1.fq.gz \
 	 -y $OUT/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.R2.fq.gz \
 	 -q ${BWGA192_SEQ[$LSB_JOBINDEX]} -m 0
 if [ $? -eq 0 ] ; then echo `date` ": ${BWGA192_IDX[$LSB_JOBINDEX]} barcode split complete" > $OUT/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.ok ; fi
 
+## total file read count
 echo ${X1}.${BWGA192_IDX[$LSB_JOBINDEX]} \
      $( zcat ${OUT}/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.R1.fq.gz | awk 'NR%4==1' | wc -l )  \
      $( zcat ${OUT}/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.R2.fq.gz | awk 'NR%4==1' | wc -l ) | \
     tr ' ' "\t" > ${OUT}/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.nreads.txt
 if [ $? -eq 0 ] ; then echo `date` ": ${BWGA192_IDX[$LSB_JOBINDEX]} read count complete" >> $OUT/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.ok ; fi
 
+## number of reads
 NR=$(cut -f 2 ${OUT}/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.nreads.txt )
 
+## read counts per chromosome
+## if read couts is zero, we set 0 to the list of all chromosomes
+## only files with reads get processed, and each output file has only counts for
+## the chromosomes prsent in the run.
+## chunck streams the alignment and only counts chromosome reads
 if [ $NR -gt 0 ] ; then     
     bwa mem -t ${LSB_MAX_NUM_PROCESSORS} -aM $GRCH37 $OUT/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.R1.fq.gz $OUT/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.R2.fq.gz  | samtools view - | cut -f 3 | sort -V | uniq -c | awk '{$1=$1;print}' | tr ' ' '\t' > ${OUT}/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.chr.counts.txt
 else
@@ -95,7 +119,8 @@ else
 fi
 if [ $? -eq 0 ] ; then echo `date` ": ${BWGA192_IDX[$LSB_JOBINDEX]} per chromosome counts complete" >> $OUT/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.ok ; fi
 
-
+## deleting unexpected barcode
+## only perfect matching barcode files (expected pairing) get retained
 if [ $BC1 != $BC2 ] ## && [ -f $OUT/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.chr.counts.txt ]
 then
     rm $OUT/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.R1.fq.gz $OUT/${X1}.${BWGA192_IDX[$LSB_JOBINDEX]}.R2.fq.gz
@@ -105,70 +130,3 @@ else
 fi
 
 
-
-
-
-########################################################################
-## -- old script
-########################################################################
-#% #<usage>
-#% [[ $# -gt 0 ]] || {
-#%     echo "Description:"
-#%     echo "Identifying corcodant barcodes in R1 and R2 files"
-#%     echo "This script requires to run the barcode.wsplit.sh first"
-#%     exit 1;
-#% }
-#% #</usage>
-#% set -e -x -o pipefail -u
-#% 
-#% R1=$1
-#% R2=$( echo ${R1} | sed -e 's/_R1/_R2/' )
-#% 
-#% EXTENSION=$2
-#% [[ ! -z "$EXTENSION" ]] || EXTENSION=.fastq.gz
-#% 
-#% X1=$( basename $R1 $EXTENSION )
-#% 
-#% BC=$( echo $X1 | sed -e 's/.*b//' )
-#% echo "Barcode is" $BC
-#% 
-#% if [ $BC -eq 1 ]
-#% then
-#%     BCIDX=0
-#% elif [ $BC -ne 1 ]
-#% then
-#%     BCIDX=$(expr $BC - 1)
-#% fi
-#% 
-#% echo $BCIDX
-#% 
-#% BWGA192_IDX=( $( cut -f 1 src/bdeplex/index.192.txt ) )
-#% BWGA192_SEQ=( $( cut -f 2 src/bdeplex/index.192.txt ) )
-#% 
-#% echo "Searching for" ${BWGA192_IDX[$BCIDX]} ${BWGA192_SEQ[$BCIDX]}
-#% 
-#% OUT=$3
-#% [[ ! -z "$OUT" ]] || OUT=wsplit2/
-#% [ -d $OUT ] || mkdir -p $OUT/
-#% 
-#% tmp_out_file=${OUT}/tmp.${X1}.${BWGA192_IDX[$BCIDX]}.R1.R2.txt.gz
-#% 
-#% R1_OUT_FILE=${OUT}/${X1}.${BWGA192_IDX[$BCIDX]}.R1.fq.gz
-#% R2_OUT_FILE=${OUT}/${X1}.${BWGA192_IDX[$BCIDX]}.R2.fq.gz
-#% 
-#% paste <( zcat ${R1} | paste  - - - - )  \
-#%       <( zcat ${R2} | paste  - - - - ) | \
-#%     awk '$2 ~ /'${BWGA192_SEQ[$BCIDX]}'[ACTGN]{83}/ &&
-#%          $6 ~ /'${BWGA192_SEQ[$BCIDX]}'[ACTGN]{83}/ {print}' | \
-#%     gzip -c > ${tmp_out_file}
-#% 
-#% zcat ${tmp_out_file} | cut -f 1-4 | tr "\t" "\n" | gzip -c > $R1_OUT_FILE
-#% zcat ${tmp_out_file} | cut -f 5-8 | tr "\t" "\n" | gzip -c > $R2_OUT_FILE
-#% 
-#% rm ${tmp_out_file}
-#% 
-#% echo ${X1}.${BWGA192_IDX[$BCIDX]} \
-#%      $( zcat ${R1_OUT_FILE} | awk 'NR%4==1' | wc -l )  \
-#%      $( zcat ${R2_OUT_FILE} | awk 'NR%4==1' | wc -l ) | \
-#%     tr ' ' "\t" > ${OUT}/${X1}.${BWGA192_IDX[$BCIDX]}.nreads.txt
-#% 
