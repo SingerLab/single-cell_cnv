@@ -15,12 +15,12 @@
     echo " as \`min' \`max' on the fourth and fifth arguments, respectively."
     echo ""
     echo "Example:"
-    echo "bsub -n 8 -M 4 -W 89 ./src/01_bowtie.sc.map.sh <genome> path/to/fastq/ .fq.gz bowtie_out/ 1.5 4.8"
-    echo "bsub -J 'bm[1-1500]' -n 8 -M 4 -W 89 ./src/01_bowtie.sc.map.sh hsa path/to/fastq/ .fq.gz bowtie_out/ 1.5 4.8"
+    echo "bsub -n 8 -M 3 -W 89 ./src/01_bowtie.sc.map.sh <genome> path/to/fastq/ .fq.gz bowtie_out/ 1.5 4.8"
+    echo "bsub -J 'bm[1-1500]' -n 8 -M 3 -W 89 ./src/01_bowtie.sc.map.sh hsa path/to/fastq/ .fq.gz bowtie_out/ 1.5 4.8"
     echo ""
     echo "Alternatively it accepts LSB_JOBINDEX as an environment variable to run"
     echo " specific files"
-    echo "bsub -n 8 -M 4 -W 89 LSB_JOBINDEX=9 ./src/01_bowtie.sc.map.sh hsa path/to/fastq/ .fq.gz bowtie_out/ 1.5 4.8"
+    echo "bsub -n 8 -M 3 -W 89 LSB_JOBINDEX=9 ./src/01_bowtie.sc.map.sh hsa path/to/fastq/ .fq.gz bowtie_out/ 1.5 4.8"
     echo ""
     exit 1;
 }
@@ -31,7 +31,9 @@
 set -E -e -x -u -o pipefail
 
 ## trap read debug
-MAX_MEM_GB=22G
+MEM_PER_JOB=$( echo $LSB_SUB_RES_REQ | sed -e 's/.*=//' -e 's/]//' )
+MAX_MEM_GB=$(( MEM_PER_JOB*LSB_MAX_NUM_PROCESSORS - 1 ))G
+
 
 echo "LSB_JOBINDEX: " $LSB_JOBINDEX
 echo "LSB_MAX_NUM_PROCESSORS: " $LSB_MAX_NUM_PROCESSORS

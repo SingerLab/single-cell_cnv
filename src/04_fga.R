@@ -68,8 +68,8 @@ bulk.pattern <- "bulk"
 dir.exists(figDir) || dir.create(figDir)
 
 ## read in matrix data -- re-bulild seg file to have copy number data instead of ratios
-cn5k <- read.delim(gzfile(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.data.txt.gz", sep = ""))), header = TRUE, as.is = TRUE)
-lr5k <- read.delim(gzfile(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.lowess.data.txt.gz", sep = ""))), header = TRUE, as.is = TRUE)
+cn5k <- read.delim(gzfile(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".varbin.data.txt.gz", sep = ""))), header = TRUE, as.is = TRUE)
+lr5k <- read.delim(gzfile(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".varbin.lowess.data.txt.gz", sep = ""))), header = TRUE, as.is = TRUE)
 ## seg5k <- read.table(file.path(inDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.short.cbs.seg", sep = "")), header = FALSE, col.names = c("cellID", "chrom", "start", "end", "nmark", "ratio"), as.is = TRUE)
 
 ## load excluded cells
@@ -143,7 +143,7 @@ alterationSummary$fga <- alterationSummary$bp.altered / 3098825702
 
 alterationSummary[is.na(alterationSummary)] <- 0
 
-write.table(alterationSummary, file = file.path(outDir, paste(sample.name, "_grch37.", bin.size, ".k50.varbin.FGA.txt", sep = "")), sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(alterationSummary, file = file.path(outDir, paste(sample.name, "_grch37.", bin.size, ".varbin.FGA.txt", sep = "")), sep = "\t", quote = FALSE, row.names = FALSE)
 
 ## write.table(alterationSummary[grep(bulk.pattern, alterationSummary$cellID), ], file = file.path(outDir, paste(sample.name, "_bulk_grch37.", bin.size, ".k50.varbin.FGA.txt", sep = "")), sep = "\t", quote = FALSE, row.names = FALSE)
 ## head(alterationSummary)
@@ -152,7 +152,7 @@ pdf(file.path(figDir, paste(sample.name, "_grch37.", bin.size, ".k50.cna.pdf", s
 plotAberration(seg5k, thres.gain = 0.1, thres.loss = -0.2)
 dev.off()
 
-seg5km <- multipcf(data = cnr, verbose = FALSE, gamma = 12)
-pdf(file.path(figDir, paste(sample.name, "_grch37.", bin.size, ".k50.cna.pdf", sep = "")), width = 210/25.4, height = 210/25.4)
+seg5km <- multipcf(data = cnr, verbose = FALSE, gamma = 8)
+pdf(file.path(figDir, paste(sample.name, "_grch37.", bin.size, ".cna.pdf", sep = "")), width = 210/25.4, height = 210/25.4)
 plotCircle(seg5km, thres.gain = 0.15)
 dev.off()
