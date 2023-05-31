@@ -4,16 +4,16 @@
 [[ $# -gt 0 ]] || {
     echo "Description:"
     echo "This script to runs the VARBIN algorithm on 5k, 20k, and 50k bins in the"
-    echo " GRCh37 reference genome.  It calculates ploidy within the specified range"
+    echo " a human reference genome.  It calculates ploidy within the specified range"
     echo " using LOWESS least square means (ginkgo single-cell method)."
     echo ""
     echo "Usage:"    
-    echo "This script expects a bam file as the first argument, file extension as the"
-    echo " second argument; and the ploidy range as \`min' \`max' on the third and"
-    echo " fourth arguments, respectively."
+    echo "This script expects a reference name as the first argument, a bam file as the"
+    echo " second argument; a file extension as the third, and the ploidy range as "
+    echo " \`min' \`max' on the fourth and fifth arguments, respectively."
     echo ""
     echo "Example:"
-    echo "bsub -n 3 -M 3 -W 89 ./src/02_varbin_pe.sh path/to/file.dd.bam .bam 1.5 4.8"
+    echo "bsub -n 3 -M 3 -W 89 ./src/02_varbin_pe.sh hsa38 path/to/file.dd.bam .bam 1.5 4.8"
     echo ""
     exit 1;
 }
@@ -23,63 +23,65 @@
 ## https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -e -x -o pipefail -u
 
+## location of cna utis is located in grch37
 cna_utils=$HOME/genomes/homo_sapiens/Ensembl/GRCh37.p13/Sequence/cna_utils/
 
-BAM=$1
+GENOME=$1
 
-OUT5=varbin5k/
-[ -d $OUT5 ] || mkdir -p $OUT5
-OUT20=varbin20k/
-[ -d $OUT20 ] || mkdir -p $OUT20
-## OUT50=varbin50k
-## [ -d $OUT50 ] || mkdir -p $OUT50
+if [ "$GENOME" = "hsa37" ]; then
+    CNA_UTIL_GENOME=hg19
+    REF_NAME=grch37
+elif [ "$GENOME" = "hsa38" ]; then
+    CNA_UTIL_GENOME=hg38
+    REF_NAME=grch38
+fi
 
-EXTENSION=$2
+BAM=$2
+
+EXTENSION=$3
 [[ ! -z "$EXTENSION" ]] || EXTENSION=.bam
 
 MID=$( basename $BAM $EXTENSION )
 echo $MID
 
 ## ploidy multipliers, min and max
-MIN=$3
-MAX=$4
-
-
-$cna_utils/scripts/getBinCounts.py -i $BAM -b $cna_utils/data/hg19_5k_gz_enc_bins.bed \
-    -d $cna_utils/data/hg19_150bp_dz_enc.bed -o ${OUT5}/${MID}_grch37.5k.bwa.bin.counts.bed \
-    -v > ${OUT5}/${MID}_grch37.5k.bwa.bin.counts.stats.bed
-
-$cna_utils/scripts/getBinCounts.py -i $BAM -b $cna_utils/data/hg19_20k_gz_enc_bins.bed \
-    -d $cna_utils/data/hg19_150bp_dz_enc.bed -o ${OUT20}/${MID}_grch37.20k.bwa.bin.counts.bed \
-    -v > ${OUT20}/${MID}_grch37.20k.bwa.bin.counts.stats.bed
-
-wait
+MIN=$4
+MAX=$5
 
 
 module load R/R-4.0.5
 
-$cna_utils/scripts/cnvProfile.R -b ${OUT5}/${MID}_grch37.5k.bwa.bin.counts.bed -g $cna_utils/data/hg19_5k_gz_enc_gc.bed \
-				-e $cna_utils/data/hg19_5k_gz_enc_badbins.bed \
-				-n ${OUT5}/${MID}_grch37.5k.bwa -v \
-				--minploidy=${MIN} --maxploidy=${MAX} 2> ${OUT5}/${MID}_grch37.5k.quantal.log
+for i in 5 20 50 100 120 200 ; do
+    OUT=varbin${i}k/
+    [ -d $OUT ] || mkdir -p $OUT
+    ## runing bins
+    echo ${i}k bin count
+    ## output dir
+    OUT=varbin${i}k/
+    ## bin count    
+    $cna_utils/scripts/getBinCounts.py \
+	-i $BAM \
+	-b $cna_utils/data/${CNA_UTIL_GENOME}_${i}k_gz_enc_bins.bed \
+	-d $cna_utils/data/${CNA_UTIL_GENOME}_150bp_dz_enc.bed \
+	-o ${OUT}/${MID}_${REF_NAME}.${i}k.bwa.bin.counts.bed \
+	-v > ${OUT}/${MID}_${REF_NAME}.${i}k.bwa.bin.counts.stats.bed
 
-echo "cellID ploidy error" | tr ' ' '\t' >  ${OUT5}/${MID}_grch37.5k.quantal.ploidy.txt
-echo $MID \
-     $(grep "Ploidy" ${OUT5}/${MID}_grch37.5k.quantal.log  | tail -n 1 | sed -e 's/.*Ploidy: //') \
-     $(grep "Error" ${OUT5}/${MID}_grch37.5k.quantal.log  | tail -n 1 | sed -e 's/.*Error: //') | \
-    tr " " "\t" >> ${OUT5}/${MID}_grch37.5k.quantal.ploidy.txt
+    ## copy number estiamtion
+    echo ${i}k varbin cn estimation
+    ## copy number estimation with varbin
+    $cna_utils/scripts/cnvProfile.R \
+	-b ${OUT}/${MID}_${REF_NAME}.${i}k.bwa.bin.counts.bed \
+	-g $cna_utils/data/${CNA_UTIL_GENOME}_${i}k_gz_enc_gc.bed \
+	-n ${OUT}/${MID}_${REF_NAME}.${i}k.bwa \
+	--minploidy=${MIN} --maxploidy=${MAX} \
+	-v 2> ${OUT}/${MID}_${REF_NAME}.${i}k.quantal.log
 
-				
-$cna_utils/scripts/cnvProfile.R -b ${OUT20}/${MID}_grch37.20k.bwa.bin.counts.bed -g $cna_utils/data/hg19_20k_gz_enc_gc.bed \
-				-e $cna_utils/data/hg19_20k_gz_enc_badbins.bed \
-				-n ${OUT20}/${MID}_grch37.20k.bwa -v \
-				--minploidy=${MIN} --maxploidy=${MAX} 2> ${OUT20}/${MID}_grch37.20k.quantal.log
+    echo "cellID ploidy error" | tr ' ' '\t' >  ${OUT}/${MID}_${REF_NAME}.${i}k.quantal.ploidy.txt
+    echo $MID \
+	 $(grep "Ploidy" ${OUT}/${MID}_${REF_NAME}.${i}k.quantal.log  | tail -n 1 | sed -e 's/.*Ploidy: //') \
+	 $(grep "Error" ${OUT}/${MID}_${REF_NAME}.${i}k.quantal.log  | tail -n 1 | sed -e 's/.*Error: //') | \
+	tr " " "\t" >> ${OUT}/${MID}_${REF_NAME}.${i}k.quantal.ploidy.txt
+done
 
-echo "cellID ploidy error" | tr ' ' '\t' >  ${OUT20}/${MID}_grch37.20k.quantal.ploidy.txt
-echo $MID \
-     $(grep "Ploidy" ${OUT20}/${MID}_grch37.20k.quantal.log  | tail -n 1 | sed -e 's/.*Ploidy: //') \
-     $(grep "Error" ${OUT20}/${MID}_grch37.20k.quantal.log  | tail -n 1 | sed -e 's/.*Error: //') | \
-    tr " " "\t" >> ${OUT20}/${MID}_grch37.20k.quantal.ploidy.txt
-				
 
 ## __EOF__

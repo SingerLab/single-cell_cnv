@@ -8,7 +8,7 @@ source("src/myLib.R")
 ## Collect arguments
 args <- commandArgs(trailingOnly = TRUE)
 #' for debugging:
-#' args <- c("--sample.name=WD1544", "--input.dir=varbin5k/", "--output.dir=vbData/", "--bin.size=5k", "--aligner=bowtie", "--overwrite.annotations=FALSE")
+#' args <- c("--sample.name=WD1544", "--input.dir=varbin5k/", "--output.dir=vbData/", "--genome=grch38", "--bin.size=5k", "--aligner=bowtie", "--nobad=FALSE", "--overwrite.annotations=FALSE")
 
 ## Default setting when no arguments passed
 if(length(args) < 1) {
@@ -21,13 +21,15 @@ if("--help" %in% args) {
       The R/Varbin Tables Script
  
       Arguments:
-      --sample.name=bioID                    - character, path to varbin genome reference files
-      --input.dir=varbin5k                   - character, path to varbin genome reference files
-      --output.dir=vbData                    - character, path to varbin genome reference files
-      --bin.size=(5k,20k)                 - character, total bins to compile 5k, 20k
-      --aligner=bowtie                       - character, bin size in kb for the analysis
-      --overwrite.annotations=FALSE          - logical, weather to overwrite the cell annotations or not
-      --help                                 - print this text
+      --sample.name=bioID                     - character, path to varbin genome reference files
+      --input.dir=varbin5k                    - character, path to varbin genome reference files
+      --output.dir=vbData                     - character, path to varbin genome reference files
+      --bin.size=(5k,20k,50k,100k,120k,200k)  - character, total bins to compile 5k, 20k
+      --aligner=bowtie                        - character, bin size in kb for the analysis
+      --genome=grch38                         - character, grch37 or grch38
+      --nobad=TRUE                            - logical, wether to exclude bins with bad mapping properties
+      --overwrite.annotations=FALSE           - logical, weather to overwrite the cell annotations or not
+      --help                                  - print this text
  
       Example:
       Rscript src/06_vbData.R --sample.name=WD5816 --input.dir=varbin20k/ --output.dir=vbData/ --bin.size=20k --aligner=bowtie \
@@ -64,7 +66,7 @@ if(! dir.exists(argsL$output.dir)) {dir.create(argsL$output.dir)}
 
 
 ## Arg3 default
-if(! argsL$bin.size %in% c("20k", "5k")) {
+if(! argsL$bin.size %in% c("200k", "120k", "100k", "50k", "20k", "5k", "1k")) {
     stop("resources for bin.size", argsL$bin.size, "are not available")
     q(save = "no")
 }
@@ -82,15 +84,25 @@ inDir  <- file.path(argsL$input.dir)
 outDir <- file.path(argsL$output.dir)
 bin.size <- argsL$bin.size
 aligner <- argsL$aligner
+genome <- argsL$genome
+nobad <- argsL$nobad
 overwrite.annotations <- argsL$overwrite.annotations
+
+## nobad
+if(nobad) {
+    ext <- ".bwa_seg_nobad.txt"
+} else {
+    ext <- ".bwa_seg.txt"
+}
+
 ## load copy number data
 cell.files <- list.files(path = inDir,
-                         pattern = paste(".hsa.FW.dd_grch37.", bin.size, ".bwa_seg_nobad.txt", sep = ""))
+                         pattern = paste("_", genome, ".", bin.size, ext, sep = ""))
                              
 
-xx <- do.call(rbind, strsplit(cell.files, split = "\\."))
+xx <- do.call(rbind, strsplit(cell.files, split = "\\_"))
 ## reconstruct cell id
-cell.list <- paste(xx[,1], xx[,2], xx[,3], sep = ".")
+cell.list <- paste(paste(xx[,1], xx[,2], xx[,3], sep = "_"), xx[,4], sep = ".")
 
 cellAnnot <- data.frame(cellID = cell.list,
                         plate = xx[,1],
@@ -102,7 +114,7 @@ cellAnnot <- data.frame(cellID = cell.list,
                         mold.grade = NA,
                         mold.viability = NA,
                         mold.appearance = NA,
-                        barcode = xx[,2],
+                        barcode = xx[,4],
                         sample.type = NA,
                         gate = NA,
                         path.comments = NA,
@@ -157,13 +169,28 @@ select_vbd_column <- function(vbd, column, coord) {
     return(out)
 }
 
+## sum cell read counts
+sum_cell_read_counts <- function(bed, column = "count") {
+    out <- sum(as.numeric(bed[, column]))
+    return(out)
+}
+
+counts <- data.frame(read.count = sapply(vbd, sum_cell_read_counts))
+
+counts$cellID = rownames(counts)
+counts$plate = gsub("(.*)\\.b([0-9]+)", "\\1", counts$cellID)
+counts$barcode = gsub("(.*)\\.b([0-9]+)", "\\2", counts$cellID)
+counts$barcode.set <- ifelse(counts$barcode <= 96, "Set1", "Set2")
+
+tapply(counts$read.count, paste0(counts$plate, ":", counts$barcode.set), mean)
+
 cat("selecting and writing quantals")
 ## cbs.seg.quantal is the same as seg.quantal
 ## chose cbs.seg.quantal colum as it's more descritive of the processing
 csq.df <- select_vbd_column(vbd = vbd, column = "seg.mean.quantal",
                                         coord = chh)
 write.table(csq.df,
-            file = gzfile(file.path(outDir, paste(sample.name, "_grch37.", bin.size,
+            file = gzfile(file.path(outDir, paste(sample.name, "_", genome, ".", bin.size,
                                                   ".varbin.data.txt.gz", sep = ""))),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 rm(csq.df)
@@ -175,7 +202,7 @@ cbd.df <- select_vbd_column(vbd, column = "lowess.ratio.quantal",
                             coord = chh)
 write.table(cbd.df,
             file = gzfile(file.path(outDir,
-                             paste(sample.name, "_grch37.", bin.size,
+                             paste(sample.name, "_", genome, ".", bin.size,
                                    ".varbin.lowess.data.txt.gz", sep = ""))),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 rm(cbd.df)
@@ -186,7 +213,7 @@ rbc.df <- select_vbd_column(vbd = vbd, column = "count",
                             coord = chh)
 write.table(rbc.df,
             file = gzfile(file.path(outDir,
-                                    paste(sample.name, "_grch37.", bin.size,
+                                    paste(sample.name, "_", genome, ".", bin.size,
                                           ".bin_counts.txt.gz", sep = ""))),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 rm(rbc.df)
@@ -202,7 +229,7 @@ mapd.qc <- data.frame(cellID = rownames(mapd.qc), mapd.qc)
 ## write out
 write.table(mapd.qc,
             file = file.path(outDir,
-                             paste(sample.name, "_grch37.", bin.size,
+                             paste(sample.name, "_", genome, ".", bin.size,
                                    ".varbin.mapd.qc.txt", sep = "")),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 
@@ -224,7 +251,7 @@ rownames(quantal.ploidy) <- quantal.ploidy$cellID
 
 write.table(quantal.ploidy,
             file = file.path(outDir,
-                             paste(sample.name, "_grch37.", bin.size,
+                             paste(sample.name, "_", genome, ".", bin.size,
                                    ".quantal.ploidy.txt", sep = "")),
             sep = "\t", quote = FALSE , row.names = FALSE)
 rm(quantal.ploidy, xx, cell.list.qs)
@@ -255,13 +282,13 @@ vb.stats.files <- list.files(inDir, pattern = ".counts.stats.bed$",
 varbin.stats <- do.call(rbind, lapply(vb.stats.files, read_varbin_pe_stats))
 varbin.stats <- cbind(cellID = rownames(varbin.stats), varbin.stats)
 
-write.table(varbin.stats, file = file.path(outDir, paste(sample.name, "_grch37.varbin.stats.txt", sep = "")),
+write.table(varbin.stats, file = file.path(outDir, paste(sample.name, "_", genome, ".varbin.stats.txt", sep = "")),
             sep = "\t", quote = FALSE , row.names = FALSE)
 
 ## READ WRITE SEG FILES
 cat("reading segment data...\n")
 ## write out .seg file
-seg.files <- list.files(inDir, pattern = paste0("_grch37.", bin.size, ".bwa_short_seg.txt$"),
+seg.files <- list.files(inDir, pattern = paste0("_", genome, ".", bin.size, ".bwa_short_seg.txt$"),
                         full.names = TRUE)
 
 igv.seg <- do.call(rbind, lapply(seg.files, read.delim)) 
@@ -271,7 +298,7 @@ igv.seg$chrom = gsub("[pq]", "", igv.seg$chrom)
 igv.seg <- igv.seg[, !names(igv.seg) %in% c("start", "end", "num")]
 write.table(igv.seg,
             file = file.path(outDir,
-                             paste(sample.name, "_grch37.", bin.size,
+                             paste(sample.name, "_", genome, ".", bin.size,
                                    ".varbin.short.cbs.seg", sep = "")),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
 
@@ -302,7 +329,7 @@ write.table(igv.seg,
 #% })
 #% 
 #% write.table(gc.norm.bin.count,
-#%             file = file.path(outDir, paste(sample.name, "_grch37.", bin.size,
+#%             file = file.path(outDir, paste(sample.name, "_", genome, ".", bin.size,
 #%                                            ".gc_corrected.bin_counts.txt",
 #%                                            sep = "")),
 #%             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)

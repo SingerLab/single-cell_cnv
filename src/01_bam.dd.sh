@@ -40,8 +40,10 @@ echo "MAX_MEM_GB: " $MAX_MEM_GB
 
 GENOME=$1
 
-if [ "$GENOME" = "hsa" ]; then
+if [ "$GENOME" = "hsa37" ]; then
     BWA_INDEX=/juno/depot/pi/resources/genomes/GRCh37/bwa_fasta/b37.fasta
+elif [ "$GENOME" = "hsa38" ]; then
+    BWA_INDEX=/juno/depot/assemblies/H.sapiens/GRCh38_GDC/index/bwa/0.7.17/GRCh38.d1.vd1.fa
 elif [ "$GENOME" = "pdx" ]; then
     BWA_INDEX=/work/singer/genomes/mus_musculus/mm10/Sequence/hg19_mm10_pdx/hg19_mm10.fa
 elif [ "$GENOME" = "mmu" ]; then
@@ -90,38 +92,8 @@ PRESEQ=/home/gularter/bin/preseq
 
 echo "## $(date) pipeline start" > ${OUT}/${MID}.ok
 
-
-## collate -- sort by read name
-$SAMTOOLS collate -@ $LSB_MAX_NUM_PROCESSORS \
-	  -o $OUT/${MID}.cl.bam \
-	  $BAM
-if [ $? -eq 0 ] ; then  echo "## $(date) collate complete" >> ${OUT}/${MID}.ok ; else exit 3 ; fi
-
-$SAMTOOLS fixmate -m -O BAM -@ $LSB_MAX_NUM_PROCESSORS \
-	  $OUT/${MID}.cl.bam \
-	  $OUT/${MID}.fx.bam
-if [ $? -eq 0 ] ; then  echo "## $(date) fixmate complete" >> ${OUT}/${MID}.ok ; rm ${OUT}/${MID}.cl.bam ; else exit 4 ; fi
-
-## sort bam file
-$SAMTOOLS sort -@ $LSB_MAX_NUM_PROCESSORS \
- 	  -m $MAX_MEM_GB \
- 	  -o $OUT/${MID}.sorted.bam \
- 	  -O BAM \
- 	  $OUT/${MID}.fx.bam  2> \
- 	  log/${MID}/${LSB_JOBID}_$(date "+%Y%m%d-%H%M%S").sort.log
- if [ $? -eq 0 ] ; then  echo "## $(date) sort complete" >> ${OUT}/${MID}.ok ; rm $OUT/${MID}.fx.bam ; else exit 5 ; fi
-
-## remove duplicate reads
-$PICARD MarkDuplicates I=$OUT/${MID}.sorted.bam \
-	O=$OUT/${MID}.${MARKDUP_BAM_EXT} \
-	M=metrics/${MID}.bwa.picard.markdups 2> \
-	log/${MID}/${LSB_JOBID}_$(date "+%Y%m%d-%H%M%S").picard_markdup.log
-if [ $? -eq 0 ] ; then  echo "## $(date) mark duplicates complete" >> ${OUT}/${MID}.ok ; rm $OUT/${MID}.sorted.bam ; else exit 6 ; fi
-
-$SAMTOOLS index -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${MARKDUP_BAM_EXT}
-
 ## deduplicate
-$PICARD MarkDuplicates I=$OUT/${MID}.${MARKDUP_BAM_EXT} \
+$PICARD MarkDuplicates I=${BAM} \
 	REMOVE_DUPLICATES=TRUE \
 	M=metrics/${MID}.bwa.picard.rmdups \
 	O=$OUT/${MID}.${DEDUP_BAM_EXT} 2> \
@@ -142,7 +114,12 @@ if [ $? -eq 0 ] ; then   echo "## $(date) clip PE reads complete" >> ${OUT}/${MI
 $SAMTOOLS index -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${SE_BAM_EXT}
 
 ## sumbit varbin_pe
-bsub -n 1 -M 3 -W 89 ./src/02_varbin_pe.sh $OUT/${MID}.${SE_BAM_EXT} ${SE_BAM_EXT} ${MIN} ${MAX}
+## 1 = genome from arg 1
+## 2 = bam file
+## 3 = extension
+## 4 = min ploidy
+## 5 = max ploidy
+bsub -n 1 -M 3 -W 89 ./src/02_varbin_pe.sh $GENOME $OUT/${MID}.${SE_BAM_EXT} ".${SE_BAM_EXT}" ${MIN} ${MAX}
 
 #__end__#
 
@@ -150,25 +127,36 @@ bsub -n 1 -M 3 -W 89 ./src/02_varbin_pe.sh $OUT/${MID}.${SE_BAM_EXT} ${SE_BAM_EX
 ## additional BAM metrics and QC
 for i in fastp metrics idxstats stats fastq_screen flagstats preseq bamqc fastqc ; do [ -d $i ] || mkdir $i ; done
 
-$SAMTOOLS flagstat -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${MARKDUP_BAM_EXT} > flagstats/${MID}.bwa.flagstat  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_flagstat.log
+## flagstats on all reads
+$SAMTOOLS flagstat -@ $LSB_MAX_NUM_PROCESSORS ${BAM} > flagstats/${MID}.bwa.flagstat  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_flagstat.log
 if [ $? -eq 0 ] ; then   echo "## $(date) flagstat complete" >> ${OUT}/${MID}.ok ; else exit 10 ; fi
 
-$SAMTOOLS idxstats -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${MARKDUP_BAM_EXT} > idxstats/${MID}.bwa.idxstats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_idxstats.log
+## all read conting counts
+$SAMTOOLS idxstats -@ $LSB_MAX_NUM_PROCESSORS ${BAM} > idxstats/${MID}.bwa.idxstats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_idxstats.log
 if [ $? -eq 0 ] ; then   echo "## $(date) idxstats complete" >> ${OUT}/${MID}.ok ; else exit 11 ; fi
 
-$SAMTOOLS stats -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${MARKDUP_BAM_EXT} > stats/${MID}.bwa.samtools.stats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_stats.log
+## unique and FW read conting counts
+$SAMTOOLS idxstats -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${SE_BAM_EXT} > idxstats/${MID}.FW.bwa.idxstats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_idxstats.log
+if [ $? -eq 0 ] ; then   echo "## $(date) idxstats complete" >> ${OUT}/${MID}.ok ; else exit 11 ; fi
+
+## in all reads of MD file
+$SAMTOOLS stats -@ $LSB_MAX_NUM_PROCESSORS ${BAM} > stats/${MID}.bwa.samtools.stats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_stats.log
 if [ $? -eq 0 ] ; then   echo "## $(date) stats complete" >> ${OUT}/${MID}.ok ; else exit 12 ; fi
 
+## qualimap bamqc all reads
 unset DISPLAY
-$QUALIMAP bamqc -nt $LSB_MAX_NUM_PROCESSORS -bam $OUT/${MID}.${MARKDUP_BAM_EXT} -gd HUMAN -outdir bamqc/${MID}/ -outfile ${MID}.bwa.pdf -outformat "PDF:HTML"  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").qualimap_bamqc.log
+$QUALIMAP bamqc -nt $LSB_MAX_NUM_PROCESSORS -bam ${BAM} -gd HUMAN -outdir bamqc/${MID}/ -outfile ${MID}.bwa.pdf -outformat "PDF:HTML"  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").qualimap_bamqc.log
 if [ $? -eq 0 ] ; then   echo "## $(date) bamqc complete" >> ${OUT}/${MID}.ok ; else exit 13 ; fi
 
-$PRESEQ c_curve -B $OUT/${MID}.${MARKDUP_BAM_EXT} > preseq/${MID}.preseq.c_curve 2> log/${MID}/$(date "+%Y%m%d-%H%M%S").preseq.c_curve.log
+## preseq compexity curve
+$PRESEQ c_curve -B ${BAM} > preseq/${MID}.preseq.c_curve 2> log/${MID}/$(date "+%Y%m%d-%H%M%S").preseq.c_curve.log
 if [ $? -eq 0 ] ; then   echo "## $(date) preseq c_curve complete" >> ${OUT}/${MID}.ok ; else exit 14 ; fi
 
-$PRESEQ lc_extrap -B $OUT/${MID}.${MARKDUP_BAM_EXT} > preseq/${MID}.preseq.lc_extrap 2> log/${MID}/$(date "+%Y%m%d-%H%M%S").preseq.lc_extrap.log
+## preseq compexity extrapolation
+$PRESEQ lc_extrap -B ${BAM} > preseq/${MID}.preseq.lc_extrap 2> log/${MID}/$(date "+%Y%m%d-%H%M%S").preseq.lc_extrap.log
 if [ $? -eq 0 ] ; then   echo "## $(date) preseq lc_extrap complete" >> ${OUT}/${MID}.ok ; else exit 15 ; fi
 
-$PICARD CollectMultipleMetrics I=$OUT/${MID}.${MARKDUP_BAM_EXT} O=metrics/$MID R=${BWA_INDEX}  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").picard_metrics.log
+## picard collect multiple metrics
+$PICARD CollectMultipleMetrics I=${BAM} O=metrics/$MID R=${BWA_INDEX}  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").picard_metrics.log
 if [ $? -eq 0 ] ; then   echo "## $(date) picard cmm complete" >> ${OUT}/${MID}.ok ; else exit 15 ; fi
 

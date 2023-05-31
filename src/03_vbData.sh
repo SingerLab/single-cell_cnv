@@ -13,8 +13,8 @@
     echo ""
     echo "Example:"
     echo ""
-    echo " bsub -Is -n 3 -M 3 -W 389 ./src/03_vbData.sh WD5816 bowtie SE"
-    echo " bsub -Is -n 3 -M 3 -W 389 ./src/03_vbData.sh WD5816 bwa PE"
+    echo " bsub -Is -n 3 -M 3 -W 389 ./src/03_vbData.sh grch38 WD5816 bowtie SE FALSE"
+    echo " bsub -Is -n 3 -M 3 -W 389 ./src/03_vbData.sh grch38 WD5816 bwa PE FALSE"
     echo ""
     exit 1;
 }
@@ -23,17 +23,26 @@
 ## don't set -x file counts wont render properly
 set -e -o pipefail -u
 
-MID=${1}
-ALIGNER=${2}
-ALIGN_TYPE=${3}
+GENOME=${1}
+MID=${2}
+ALIGNER=${3}
+ALIGN_TYPE=${4}
+NOBAD=${5}
 
 [[ ! -z $MID ]] ||  { echo "Sample ID missing!" ; exit 1; }
+
+
+if [ ${NOBAD} = "TRUE" ] ; then
+    EXT=bwa_seg_nobad.txt
+else 
+    EXT=bwa_seg.txt
+fi
 
 echo "aggregating files:"
 if [ ${ALIGN_TYPE} = "SE" ] ; then
     echo "# number of files in :"
     echo "#bin.dir vbData ploidy vbStats" | tr ' ' "\t"
-    for i in  varbin{5,20,50}k ; do
+    for i in  varbin{5,20,50,100,120,200}k ; do
 	echo ${i}/ $(ls $i/*k50.varbin.data.txt |wc -l ) \
 	     $( ls $i/*k50.varbin.quantal.stats.txt | wc -l ) \
 	     $( ls $i/*.varbin.stats.txt | wc -l ) ;
@@ -46,7 +55,7 @@ if [ ${ALIGN_TYPE} = "SE" ] ; then
     
     for i in ${BINS[@]}
     do
-	Rscript ./src/03_vbData.R  --sample.name=${MID} --input.dir=varbin${i} --output.dir=vbData --bin.size=${i} --aligner=${ALIGNER} &
+	Rscript ./src/03_vbData.R  --sample.name=${MID} --input.dir=varbin${i} --output.dir=vbData --genome=${GENOME} --bin.size=${i} --aligner=${ALIGNER} --nobad=${NOBAD} &
     done
 
     echo "##" `date` >> processed.files.txt
@@ -58,20 +67,25 @@ if [ ${ALIGN_TYPE} = "PE" ] ; then
     echo "# number of files in :"
     echo "#bin.dir vbData ploidy vbStats" | tr ' ' "\t"
     for i in  varbin{5,20}k ; do
-	echo ${i}/ $(ls $i/*bwa_seg_nobad.txt |wc -l ) \
+	echo ${i}/ $(ls $i/*${EXT} |wc -l ) \
 	     $( ls $i/*quantal.ploidy.txt | wc -l ) \
 	     $( ls $i/*.counts.stats.bed | wc -l ) ;
     done | tr ' ' "\t"
-
+    
     BINS=(
+	200k
+	120k
+	100k
+	50k
 	20k
 	5k
     )
+
     for i in ${BINS[@]}
     do
-	Rscript ./src/03_vbData_pe.R  --sample.name=${MID} --input.dir=varbin${i} --output.dir=vbData --bin.size=${i} --aligner=${ALIGNER} &
+	Rscript ./src/03_vbData_pe.R  --sample.name=${MID} --input.dir=varbin${i} --genome=${GENOME} --nobad=${NOBAD} --output.dir=vbData --bin.size=${i} --aligner=${ALIGNER} &
     done
-
+    
     echo "##" `date` >> processed.files.txt
     ./src/00_processed.files.sh $MID wsplit_pe/ bwa_out/ >> processed.files.txt
     wait ${!}
@@ -79,7 +93,6 @@ fi
 
 echo "sequence.quality per.sequence.quality per.sequence.gc per.base.N sequence.duplication overrepresented.sequences" | tr " " "\t" > vbData/${MID}_exclude.failed.txt
 echo "sequence.quality per.sequence.quality per.sequence.gc per.base.N sequence.duplication overrepresented.sequences" | tr " " "\t" > vbData/${MID}_exclude.warnings.txt
-
 
 
 ## echo "starting geneCN"
