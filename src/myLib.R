@@ -50,31 +50,8 @@ panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
  } ## panel.cor
 
 
-lookupCN <- function(data, coord) {
-    ## data is a cn50k or any other type of data frame with columns chr, chrompos, start, and end 
-    ## coord is a list object with elements $chr $start $end
-    t(data[data$chrom == coord$chr & data$chrompos > coord$start & data$chrompos < coord$end, 4:ncol(data)])
-} ## lookupCN
-
-
-## https://stackoverflow.com/questions/9314658/colorbar-from-custom-colorramppalette
-## for making color bars
-color.bar <- function(lut, min, max=-min, nticks=11, ticks=seq(min, max, len=nticks), title='') {
-    scale = (length(lut)-1)/(max-min)
-
-    dev.new(width=1.75, height=5)
-    plot(c(0,10), c(min,max), type='n', bty='n', xaxt='n', xlab='', yaxt='n', ylab='', main=title)
-    axis(2, ticks, las=1)
-    for (i in 1:(length(lut)-1)) {
-     y = (i-1)/scale + min
-     rect(0,y,10,y+1/scale, col=lut[i], border=NA)
-    }
-} ## color.bar
-
-
 ## plotting multiple heatmaps
 ## https://support.bioconductor.org/p/87318/
-
 grab_grob <- function(){
     grid.echo()
     grid.grab()
@@ -84,22 +61,6 @@ drawGridHeatmap  <- function(hm) {
     draw(hm)
     grab_grob()
 }
-
-
-## marking genes in line plot
-mark.genes <- function(g.index, gene.list) {
-    gg <- g.index[gene.list, "bin.id"]
-    names(gg) <- gene.list
-    return(gg)
-} ## mark.genes
-    
-## expanding segment data to geneCN data
-expand2genes <- function(cn.dat, gene.index, bin.id = "bin.id", gene.id = "hgnc.symbol") {
-    giu <- gene.index[!duplicated(gene.index[, gene.id]) & gene.index[, gene.id] != "", ]
-    geneCN  <- t(cn.dat[giu[, bin.id], ])
-    colnames(geneCN) <- giu[, gene.id]
-    geneCN
-} ## expand2genes
 
 
 ## Create mode function
@@ -127,16 +88,6 @@ mapd <- function(x, ...) {
     cvz <- sd(az)/mean(az)
     return(c("mapd" = mz, "mapd.sd" = sdz, "mapd.cv" = cvz))
 } ## mapd
-
-## round quantal matrix
-roundCNR <- function(cnr) {
-    cnr[cnr <= 2.5 & cnr > 1.2] <- 2
-    cnr[cnr <= 1.2 & cnr > 0.2] <- 1
-    cnr[cnr <= 0.2] <- 0
-    cnr <- round(cnr)
-    cnr
-}
-
 
 ## DepMap process
 DepScores <- function() {
@@ -231,33 +182,11 @@ depmap_annotate <- function(gistic.genes, depMeans) {
 } ## depmap annotate
 
 
-## build ternary matrix from integer copy number data
-ternary.cnr <- function(cnr, gain = 3, amp = 20) {
-    cnr[cnr == 2] <- 0
-    cnr[cnr == 0] <- 2
-    cnr[cnr == 1] <- 1
-    cnr[cnr >= gain & cnr <= amp] <- 1
-    cnr[cnr > amp] <- 2
-    cnr
-} ## ternary.cnr
 
-## build binary matrix from integer copy number data
-binary.cnr <- function(cnr) {
-    cnr[cnr == 2] <- 0
-    cnr[cnr != 0] <- 1
-    cnr
-} ## binary.cnr
+#' estimate FGA
+estimate_fga <- function(x, base.ploidy = 2) {
+    x <- round(x)
+    out <- sum(x != base.ploidy) / length(x)
+    return(out)
+}
 
-## combine genes w/equal frequency to be only once
-## duplicate frequencies create infinite combinations in the trees
-gene.aggregate <- function(cnr) {
-
-    fq <- rowSums(cnr)/ncol(cnr)
-    dups <- fq[duplicated(cnr) | duplicated(cnr,fromLast = TRUE)]
-    
-    dgroups <- sapply(dups, function(i) names(fq)[fq == i])
-    duse <- sapply(dgroups, `[`, 1)
-    dnew <- as.character(sapply(dgroups, function(i) paste(dput(i), collapse = "_")))
-    dd <- data.frame(duse = as.character(duse), dnew = as.character(dnew))
-    dd
-} 

@@ -8,7 +8,8 @@ source("src/myLib.R")
 ## Collect arguments
 args <- commandArgs(trailingOnly = TRUE)
 #' for debugging:
-#' args <- c("--sample.name=WD1544", "--input.dir=varbin5k/", "--output.dir=vbData/", "--genome=grch38", "--bin.size=5k", "--aligner=bowtie", "--nobad=FALSE", "--overwrite.annotations=FALSE")
+#' args <- c("--sample.name=DD4388", "--input.dir=varbin5k/DD4388", "--output.dir=vbData/DD4388/", "--genome=grch38", "--bin.size=5k", "--aligner=bwa", "--nobad=FALSE", "--overwrite.annotations=FALSE")
+
 
 ## Default setting when no arguments passed
 if(length(args) < 1) {
@@ -33,9 +34,9 @@ if("--help" %in% args) {
  
       Example:
       Rscript src/06_vbData.R --sample.name=WD5816 --input.dir=varbin20k/ --output.dir=vbData/ --bin.size=20k --aligner=bowtie \
-           --overwrite.annotations=FALSE
+           --nobad=TRUE --overwrite.annotations=FALSE
       Rscript src/06_vbData.R --sample.name=WD5816 --input.dir=varbin5k/ --output.dir=vbData/ --bin.size=5k --aligner=bowtie \
-           --overwrite.annotations=FALSE
+           --nobad=TRUE --overwrite.annotations=FALSE
 ")
   q(save="no")
 }
@@ -49,20 +50,21 @@ argsL <- as.list(as.character(argsDF$V2))
 names(argsL) <- argsDF$V1
 
 ## sandardizing to no dashes and 'k' = thousand bins; not kilobases (kb)
-argsL$input.dir <- gsub("\\/+", "", argsL$input.dir)
-argsL$output.dir <- gsub("\\/+", "", argsL$output.dir)
+argsL$input.dir <- gsub("\\/+$", "", argsL$input.dir)
+argsL$output.dir <- gsub("\\/+$", "", argsL$output.dir)
 argsL$bin.size <- gsub("kb", "k", argsL$bin.size)
 
 argsL
 
 ## Arg1 default
+
 if(! dir.exists(argsL$input.dir)) {
     stop("input directory ", argsL$input.dir, " not found")
     q(save = "no")
 }
 
 ## Arg2 default -- create output directory if it doesn't exist
-if(! dir.exists(argsL$output.dir)) {dir.create(argsL$output.dir)}
+if(! dir.exists(argsL$output.dir)) {dir.create(argsL$output.dir, recursive = TRUE)}
 
 
 ## Arg3 default
@@ -101,8 +103,16 @@ cell.files <- list.files(path = inDir,
                              
 
 xx <- do.call(rbind, strsplit(cell.files, split = "\\_"))
+
 ## reconstruct cell id
-cell.list <- paste(paste(xx[,1], xx[,2], xx[,3], sep = "_"), xx[,4], sep = ".")
+if(sample.name == "1000g") {
+    cell.list <- xx[,1]
+    xx <- cbind(xx, "b0")
+    xx[,2] <- "0"
+    xx[,3] <- "0"
+} else {
+    cell.list <- paste(paste(xx[,1], xx[,2], xx[,3], sep = "_"), xx[,4], sep = ".")
+}
 
 cellAnnot <- data.frame(cellID = cell.list,
                         plate = xx[,1],
@@ -169,30 +179,34 @@ select_vbd_column <- function(vbd, column, coord) {
     return(out)
 }
 
-## sum cell read counts
-sum_cell_read_counts <- function(bed, column = "count") {
-    out <- sum(as.numeric(bed[, column]))
-    return(out)
-}
-
-counts <- data.frame(read.count = sapply(vbd, sum_cell_read_counts))
-
-counts$cellID = rownames(counts)
-counts$plate = gsub("(.*)\\.b([0-9]+)", "\\1", counts$cellID)
-counts$barcode = gsub("(.*)\\.b([0-9]+)", "\\2", counts$cellID)
-counts$barcode.set <- ifelse(counts$barcode <= 96, "Set1", "Set2")
-
-tapply(counts$read.count, paste0(counts$plate, ":", counts$barcode.set), mean)
-
 cat("selecting and writing quantals")
 ## cbs.seg.quantal is the same as seg.quantal
 ## chose cbs.seg.quantal colum as it's more descritive of the processing
 csq.df <- select_vbd_column(vbd = vbd, column = "seg.mean.quantal",
-                                        coord = chh)
+                            coord = chh)
 write.table(csq.df,
-            file = gzfile(file.path(outDir, paste(sample.name, "_", genome, ".", bin.size,
-                                                  ".varbin.data.txt.gz", sep = ""))),
+            file = gzfile(file.path(outDir,
+                                    paste(sample.name, "_",
+                                          genome, ".", bin.size,
+                                          ".varbin.data.txt.gz", sep = ""))),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
+cat("estimate fga")
+data.ploidy <- round(mean(as.matrix(csq.df[,4:ncol(csq.df)]), na.rm = TRUE))
+
+fga.df <- data.frame(
+    cellID = names(csq.df)[4:ncol(csq.df)],
+    fga = apply(csq.df[,4:ncol(csq.df)], 2, estimate_fga,
+                base.ploidy = data.ploidy),
+    mad = apply(csq.df[,4:ncol(csq.df)], 2, mad)
+)
+
+write.table(fga.df,
+            file = file.path(outDir,
+                             paste0(sample.name, "_",
+                                   genome, ".", bin.size, ".FGA.txt")),
+            sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
 rm(csq.df)
 
 ## seg.mean.LOWESS is the same as cbs.seg;
@@ -226,6 +240,7 @@ lbd <- select_vbd_column(vbd = vbd, column = "lowess.ratio",
 ## calculate mapd
 mapd.qc <- t(apply(lbd, 2, mapd))
 mapd.qc <- data.frame(cellID = rownames(mapd.qc), mapd.qc)
+
 ## write out
 write.table(mapd.qc,
             file = file.path(outDir,
@@ -233,21 +248,26 @@ write.table(mapd.qc,
                                    ".varbin.mapd.qc.txt", sep = "")),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 
-cat("reading ploidy and stats data...\n")
+rm(lbd)
 
-## write out cell annotations file
+## PLOIDY
+cat("reading ploidy and stats data...\n")
+## write out ploidy
 q.ploidy.files <- list.files(inDir, pattern = "quantal.ploidy.txt$",
                             full.names = TRUE)
 
-xx <- do.call(rbind, strsplit(gsub(paste0("varbin", bin.size, "/"), "",
-                                   q.ploidy.files), "\\."))
+xx <- do.call(rbind, strsplit(unlist(sapply(strsplit(q.ploidy.files, "/"), `[`, 3)), "_"))
 
-cell.list.qs <- paste(xx[,1], xx[,2], xx[,3], sep = ".")
-
+if(sample.name == "1000g") {
+    cell.list.qs <- xx[,1]
+    xx[, 2] <-  "0"
+    xx <- cbind(xx, "0", "b0")
+} else {
+    cell.list.qs <- paste(paste(xx[,1], xx[,2], xx[,3], sep = "_"), xx[,4], sep = ".")
+}
+    
 quantal.ploidy <- do.call(rbind, lapply(q.ploidy.files, read.delim, nrow = 1))
 quantal.ploidy$cellID  <- cell.list.qs
-
-rownames(quantal.ploidy) <- quantal.ploidy$cellID
 
 write.table(quantal.ploidy,
             file = file.path(outDir,
@@ -259,9 +279,10 @@ rm(quantal.ploidy, xx, cell.list.qs)
 ## get varbin stats
 cat("reading varbin stats data...\n")
 ## write out cell annotations file
-read_varbin_pe_stats <- function(stats.file) {
-    cell.id <- gsub(".*/(.*)\\.(b[0-9]+)\\.(b[0-9]+).*", "\\1.\\2.\\3", stats.file )
 
+read_varbin_pe_stats <- function(stats.file) {
+    cell.id <- gsub(".*/(.*)_(b[0-9]+).*", "\\1.\\2", stats.file )
+    ##
     nx <- length(readLines(stats.file))
     if(nx) {
     ss <- read.table(stats.file, skip = 1, header = FALSE,
@@ -279,6 +300,7 @@ read_varbin_pe_stats <- function(stats.file) {
 
 vb.stats.files <- list.files(inDir, pattern = ".counts.stats.bed$",
                              full.names = TRUE)
+
 varbin.stats <- do.call(rbind, lapply(vb.stats.files, read_varbin_pe_stats))
 varbin.stats <- cbind(cellID = rownames(varbin.stats), varbin.stats)
 

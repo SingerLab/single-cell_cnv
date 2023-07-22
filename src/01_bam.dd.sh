@@ -20,7 +20,7 @@
     echo "  120 min w/ 4 threads and 24G RAM"
     echo ""
     echo "Example:"
-    echo "bsub -n 8 -M 4 -W 89 ./src/01_bwa.dd.map.sh <genome> <path/to/bam/> <.bam> <bwa_out/> <1.5> <4.8>"
+    echo "bsub -n 8 -M 4 -W 89 ./src/01_bam.dd.sh <genome> <path/to/bam/> <.bam> <bwa_out/> <1.5> <4.8>"
     echo ""
     echo ""
     exit 1;
@@ -65,23 +65,22 @@ OUT=$4 || true
 MID=$( basename ${BAM} $EXTENSION | sed -e 's/_IGO.*//' )
 echo $MID
 
+GROUP=$(echo $MID | cut -d "_" -f 1 | sed -E 's/[PRMB]$//')
+
 MIN=${5}
 MAX=${6}
 
 ## BAM extensions
 ## PE = Paired-END
-## ${GENOME}.PE.dd.bam -- change to choose genomes
+## FW = forward pair only
 MARKDUP_BAM_EXT=${GENOME}.PE.md.bam
 DEDUP_BAM_EXT=${GENOME}.PE.dd.bam
 SE_BAM_EXT=${GENOME}.FW.dd.bam
 
 ## create log files
-[ -d log/$MID ] || mkdir -p log/$MID
+[ -d log/${GROUP}/$MID ] || mkdir -p log/${GROUP}/${MID}
 [ -d tmp/ ] || mkdir -p tmp/
-[ -d metrics/ ] || mkdir -p metrics/
-
-## if bam file exists: exit
-[[ ! -f  $OUT/${MID}.${SE_BAM_EXT} ]] || exit 1
+[ -d metrics/${GROUP} ] || mkdir -p metrics/${GROUP}
 
 ## tools
 BWA=/work/singer/opt/miniconda3/bin/bwa
@@ -90,73 +89,81 @@ PICARD=/work/singer/opt/miniconda3/bin/picard
 QUALIMAP=/work/singer/opt/miniconda3/bin/qualimap
 PRESEQ=/home/gularter/bin/preseq
 
-echo "## $(date) pipeline start" > ${OUT}/${MID}.ok
+## if bam file exists: skip to varbin
+if [ ! -f  $OUT/${MID}.${SE_BAM_EXT} ] ; then
 
-## deduplicate
-$PICARD MarkDuplicates I=${BAM} \
-	REMOVE_DUPLICATES=TRUE \
-	M=metrics/${MID}.bwa.picard.rmdups \
-	O=$OUT/${MID}.${DEDUP_BAM_EXT} 2> \
-	log/${MID}/${LSB_JOBID}_$(date "+%Y%m%d-%H%M%S").picard_rmdup.log
-if [ $? -eq 0 ] ; then  echo "## $(date) remove duplicates complete" >> ${OUT}/${MID}.ok ; else exit 7 ; fi
-
-## filter by read quality and unique hits
-$SAMTOOLS view -@ $LSB_MAX_NUM_PROCESSORS -q 30 -F 0x800 -o $OUT/${MID}.UQ.bam \
-	  $OUT/${MID}.${DEDUP_BAM_EXT}
-if [ $? -eq 0 ] ; then   echo "## $(date) filter unique reads complete" >> ${OUT}/${MID}.ok ; rm $OUT/${MID}.${DEDUP_BAM_EXT} ; else exit 8 ; fi
-
-## clip/remove 1 mate of the PE reads (avoids counting twice)
-samtools view -@ ${LSB_MAX_NUM_PROCESSORS} -f 0x40 -h -o $OUT/${MID}.${SE_BAM_EXT} \
-	 $OUT/${MID}.UQ.bam
-if [ $? -eq 0 ] ; then   echo "## $(date) clip PE reads complete" >> ${OUT}/${MID}.ok ; rm $OUT/${MID}.UQ.bam ; else exit 9 ; fi
-
-## indexing
-$SAMTOOLS index -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${SE_BAM_EXT}
-
-## sumbit varbin_pe
-## 1 = genome from arg 1
-## 2 = bam file
-## 3 = extension
-## 4 = min ploidy
-## 5 = max ploidy
+    echo "## $(date) pipeline start" > ${OUT}/${MID}.ok
+    
+    ## deduplicate
+    $PICARD MarkDuplicates I=${BAM} \
+	    REMOVE_DUPLICATES=TRUE \
+	    M=metrics/${GROUP}/${MID}.bwa.picard.rmdups \
+	    O=$OUT/${MID}.${DEDUP_BAM_EXT} -Xmx$MAX_MEM_GB 2> \
+	    log/${GROUP}/${MID}/${LSB_JOBID}_$(date "+%Y%m%d-%H%M%S").picard_rmdup.log
+    if [ $? -eq 0 ] ; then  echo "## $(date) remove duplicates complete" >> ${OUT}/${MID}.ok ; else exit 7 ; fi
+    
+    ## filter by read quality and unique hits
+    $SAMTOOLS view -@ $LSB_MAX_NUM_PROCESSORS -q 30 -F 0x800 -o $OUT/${MID}.UQ.bam \
+	      $OUT/${MID}.${DEDUP_BAM_EXT}
+    if [ $? -eq 0 ] ; then   echo "## $(date) filter unique reads complete" >> ${OUT}/${MID}.ok ; rm $OUT/${MID}.${DEDUP_BAM_EXT} ; else exit 8 ; fi
+    
+    ## clip/remove 1 mate of the PE reads (avoids counting twice)
+    samtools view -@ ${LSB_MAX_NUM_PROCESSORS} -f 0x40 -h -o $OUT/${MID}.${SE_BAM_EXT} \
+	     $OUT/${MID}.UQ.bam
+    if [ $? -eq 0 ] ; then   echo "## $(date) clip PE reads complete" >> ${OUT}/${MID}.ok ; rm $OUT/${MID}.UQ.bam ; else exit 9 ; fi
+    
+    ## indexing
+    $SAMTOOLS index -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${SE_BAM_EXT}
+    
+    ## sumbit varbin_pe
+    ## 1 = genome from arg 1
+    ## 2 = bam file
+    ## 3 = extension
+    ## 4 = min ploidy
+    ## 5 = max ploidy
+else
+    echo "## $(date) $OUT/${MID}.${SE_BAM_EXT} exist, submiiting to varbin + re-QC" > ${OUT}/${MID}.ok
+fi
+ 
 bsub -n 1 -M 3 -W 89 ./src/02_varbin_pe.sh $GENOME $OUT/${MID}.${SE_BAM_EXT} ".${SE_BAM_EXT}" ${MIN} ${MAX}
 
 #__end__#
 
 
 ## additional BAM metrics and QC
-for i in fastp metrics idxstats stats fastq_screen flagstats preseq bamqc fastqc ; do [ -d $i ] || mkdir $i ; done
+for i in fastp metrics idxstats stats fastq_screen flagstats preseq bamqc fastqc ; do [ -d $i/${GROUP} ] || mkdir -p ${i}/${GROUP} ; done
 
 ## flagstats on all reads
-$SAMTOOLS flagstat -@ $LSB_MAX_NUM_PROCESSORS ${BAM} > flagstats/${MID}.bwa.flagstat  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_flagstat.log
+
+$SAMTOOLS flagstat -@ $LSB_MAX_NUM_PROCESSORS ${BAM} > flagstats/${GROUP}/${MID}.bwa.flagstat  2> log/${GROUP}/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_flagstat.log
 if [ $? -eq 0 ] ; then   echo "## $(date) flagstat complete" >> ${OUT}/${MID}.ok ; else exit 10 ; fi
 
 ## all read conting counts
-$SAMTOOLS idxstats -@ $LSB_MAX_NUM_PROCESSORS ${BAM} > idxstats/${MID}.bwa.idxstats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_idxstats.log
+$SAMTOOLS idxstats -@ $LSB_MAX_NUM_PROCESSORS ${BAM} > idxstats/${GROUP}/${MID}.bwa.idxstats  2> log/${GROUP}/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_idxstats.log
 if [ $? -eq 0 ] ; then   echo "## $(date) idxstats complete" >> ${OUT}/${MID}.ok ; else exit 11 ; fi
 
 ## unique and FW read conting counts
-$SAMTOOLS idxstats -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${SE_BAM_EXT} > idxstats/${MID}.FW.bwa.idxstats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_idxstats.log
+$SAMTOOLS idxstats -@ $LSB_MAX_NUM_PROCESSORS $OUT/${MID}.${SE_BAM_EXT} > idxstats/${GROUP}/${MID}.FW.bwa.idxstats  2> log/${GROUP}/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_idxstats.log
 if [ $? -eq 0 ] ; then   echo "## $(date) idxstats complete" >> ${OUT}/${MID}.ok ; else exit 11 ; fi
 
 ## in all reads of MD file
-$SAMTOOLS stats -@ $LSB_MAX_NUM_PROCESSORS ${BAM} > stats/${MID}.bwa.samtools.stats  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_stats.log
+$SAMTOOLS stats -@ $LSB_MAX_NUM_PROCESSORS ${BAM} > stats/${GROUP}/${MID}.bwa.samtools.stats  2> log/${GROUP}/${MID}/$(date "+%Y%m%d-%H%M%S").samtools_stats.log
 if [ $? -eq 0 ] ; then   echo "## $(date) stats complete" >> ${OUT}/${MID}.ok ; else exit 12 ; fi
 
 ## qualimap bamqc all reads
 unset DISPLAY
-$QUALIMAP bamqc -nt $LSB_MAX_NUM_PROCESSORS -bam ${BAM} -gd HUMAN -outdir bamqc/${MID}/ -outfile ${MID}.bwa.pdf -outformat "PDF:HTML"  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").qualimap_bamqc.log
+$QUALIMAP bamqc -nt $LSB_MAX_NUM_PROCESSORS -bam ${BAM} -gd HUMAN -outdir bamqc/${GROUP}/${MID}/ -outfile ${MID}.bwa.pdf -outformat "PDF:HTML"  2> log/${GROUP}/${MID}/$(date "+%Y%m%d-%H%M%S").qualimap_bamqc.log
 if [ $? -eq 0 ] ; then   echo "## $(date) bamqc complete" >> ${OUT}/${MID}.ok ; else exit 13 ; fi
 
 ## preseq compexity curve
-$PRESEQ c_curve -B ${BAM} > preseq/${MID}.preseq.c_curve 2> log/${MID}/$(date "+%Y%m%d-%H%M%S").preseq.c_curve.log
+$PRESEQ c_curve -B ${BAM} > preseq/${GROUP}/${MID}.preseq.c_curve 2> log/${GROUP}/${MID}/$(date "+%Y%m%d-%H%M%S").preseq.c_curve.log
 if [ $? -eq 0 ] ; then   echo "## $(date) preseq c_curve complete" >> ${OUT}/${MID}.ok ; else exit 14 ; fi
 
 ## preseq compexity extrapolation
-$PRESEQ lc_extrap -B ${BAM} > preseq/${MID}.preseq.lc_extrap 2> log/${MID}/$(date "+%Y%m%d-%H%M%S").preseq.lc_extrap.log
+$PRESEQ lc_extrap -B ${BAM} > preseq/${GROUP}/${MID}.preseq.lc_extrap 2> log/${GROUP}/${MID}/$(date "+%Y%m%d-%H%M%S").preseq.lc_extrap.log
 if [ $? -eq 0 ] ; then   echo "## $(date) preseq lc_extrap complete" >> ${OUT}/${MID}.ok ; else exit 15 ; fi
 
 ## picard collect multiple metrics
-$PICARD CollectMultipleMetrics I=${BAM} O=metrics/$MID R=${BWA_INDEX}  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").picard_metrics.log
+$PICARD CollectMultipleMetrics I=${BAM} O=metrics/${GROUP}/${MID} R=${BWA_INDEX} -Xmx$MAX_MEM_GB  2> log/${GROUP}/${MID}/$(date "+%Y%m%d-%H%M%S").picard_metrics.log
 if [ $? -eq 0 ] ; then   echo "## $(date) picard cmm complete" >> ${OUT}/${MID}.ok ; else exit 15 ; fi
 

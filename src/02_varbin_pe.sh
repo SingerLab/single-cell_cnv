@@ -24,7 +24,8 @@
 set -e -x -o pipefail -u
 
 ## location of cna utis is located in grch37
-cna_utils=$HOME/genomes/homo_sapiens/Ensembl/GRCh37.p13/Sequence/cna_utils/
+#cna_utils=$HOME/genomes/homo_sapiens/Ensembl/GRCh37.p13/Sequence/cna_utils/
+cna_utils=/work/singer/opt/cna_utils/
 
 GENOME=$1
 
@@ -48,16 +49,16 @@ echo $MID
 MIN=$4
 MAX=$5
 
+GROUP=$(echo $( basename $(dirname $BAM) | sed -E 's/[PRMB]$//'))
 
 module load R/R-4.0.5
 
 for i in 5 20 50 100 120 200 ; do
-    OUT=varbin${i}k/
+    ## output dir
+    OUT=varbin${i}k/${GROUP}
     [ -d $OUT ] || mkdir -p $OUT
     ## runing bins
     echo ${i}k bin count
-    ## output dir
-    OUT=varbin${i}k/
     ## bin count    
     $cna_utils/scripts/getBinCounts.py \
 	-i $BAM \
@@ -85,3 +86,21 @@ done
 
 
 ## __EOF__
+
+#% for i in 20 5 ; do 
+#%     OUT=varbin${i}k/${GROUP}
+#%     [ -d $OUT ] || mkdir -p $OUT
+#%     ## runing bins
+#%     echo ${i}k bin count
+#% 
+#%     $cna_utils/scripts/cnvProfile.R \
+#% 	-b ${OUT}/${MID}_${REF_NAME}.${i}k.bwa.bin.counts.bed \
+#% 	-g $cna_utils/data/${CNA_UTIL_GENOME}_${i}k_gz_enc_gc.bed \
+#% 	-e $cna_utils/data/${CNA_UTIL_GENOME}_${i}k_gz_enc_badbins_gc.bed \
+#% 	-n ${OUT}/${MID}_${REF_NAME}.${i}k.bwa.nobad \
+#% 	--minploidy=${MIN} --maxploidy=${MAX} \
+#% 	-v 2> ${OUT}/${MID}_${REF_NAME}.${i}k.nobad.quantal.log
+#% done
+#% 
+
+

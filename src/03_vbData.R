@@ -59,7 +59,7 @@ if(! dir.exists(argsL$input.dir)) {
 }
 
 ## Arg2 default -- create output directory if it doesn't exist
-if(! dir.exists(argsL$output.dir)) {dir.create(argsL$output.dir)}
+if(! dir.exists(argsL$output.dir)) {dir.create(argsL$output.dir, recursive = TRUE)}
 
 
 ## Arg3 default
@@ -94,8 +94,8 @@ cell.list <- paste(xx[,1], xx[,2], sep = ".")
 cellAnnot <- data.frame(cellID = cell.list,
                         plate = xx[,1],
                         subsample = gsub("(.*)_(.*)_(.*)", "\\1_\\2", xx[,1]),
-                        sampleID =  gsub("(.*)_(.*)_(.*)", "\\1[PRM]", xx[,1]),
-                        bioID =   gsub("(.*)_(.*)_(.*)", "\\1", xx[,1]),
+                        sampleID = gsub("(.*)_(.*)_(.*)", "\\1[PRM]", xx[,1]),
+                        bioID = gsub("(.*)_(.*)_(.*)", "\\1", xx[,1]),
                         subtype = NA,
                         mold.histology = NA,
                         mold.grade = NA,
@@ -117,11 +117,11 @@ if(overwrite.annotations) {
     message("vbData finished succesfully, w/ annotations overwritten")
 } else {
     if(!file.exists(annotation.file)) {
-    write.table(cellAnnot,
-                file = annotation.file,                       
-                row.names = TRUE, quote = FALSE, sep = "\t",
-                na = "")
-    message("vbData finished succesfully, w/ new annotations created")
+        write.table(cellAnnot,
+                    file = annotation.file,                       
+                    row.names = TRUE, quote = FALSE, sep = "\t",
+                    na = "")
+        message("vbData finished succesfully, w/ new annotations created")
     } else {
         message("vbData finished succesfully, prev. annotations preserved")
     }
