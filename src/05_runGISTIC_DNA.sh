@@ -7,8 +7,8 @@
     echo "This script to runs GISTIC for 20kb with parameters optimized for bulkDNA log-ratio cutoffs"
     echo ""
     echo "Usage:"    
-    echo "bsub -n 1 -M 12 -W 359 ./src/05_runGISTIC_SC.sh <confidence> path/to/file.cbs.seg <file.extension> <5k|20k|50k bin_level> <out_dir>"
-    echo "bsub -n 1 -M 12 -W 359 ./src/05_runGISTIC_SC.sh 80 path/to/file.cbs.seg 20k .cbs.seg gistic_out/"
+    echo "bsub -n 1 -M 12 -W 359 ./src/05_runGISTIC_DNA.sh <genome reference> <confidence> path/to/file.cbs.seg <file.extension> <5k|20k|50k bin_level> <out_dir>"
+    echo "bsub -n 1 -M 12 -W 359 ./src/05_runGISTIC_DNA.sh hg38 80 path/to/file.cbs.seg 20k .cbs.seg gistic_out/"
     echo ""
     exit 1;
 }
@@ -21,39 +21,61 @@ HG19MAT=${HOME}/genomes/homo_sapiens/Ensembl/GRCh37.p13/Sequence/GISTIC2/hg19.ma
 
 
 ## confidence intervals, seg file, and file extension
-CONF=$1
-INFILE=$2
-EXTENSION=$3
-BIN_LEVEL=$4
+REFERENCE=$1
+CONF=$2
+INFILE=$3
+EXTENSION=$4
+BIN_LEVEL=$5
 ## VBINS50K=res/gistic/grch37.bin.boundaries.50k.bowtie.k50.makerFile.txt
 ## VBINS20K=res/gistic/grch37.bin.boundaries.20k.bowtie.k50.makerFile.txt
 ## VBINS5K=res/gistic/grch37.bin.boundaries.5k.bowtie.k50.makerFile.txt
 
-## path to marker files based on 5k, 20k, and 50k 
-if [ $BIN_LEVEL == "5k" ]
-then
-    VBINS=res/gistic/grch37.bin.boundaries.5k.bowtie.k50.makerFile.txt
-elif [ $BIN_LEVEL == "20k" ]
-then
-    VBINS=res/gistic/grch37.bin.boundaries.20k.bowtie.k50.makerFile.txt
-elif [ $BIN_LEVEL == "50k" ]
-then
-    VBINS=res/gistic/grch37.bin.boundaries.50k.bowtie.k50.makerFile.txt
+## path to marker files based on 5k, 20k, and 50k
+if [ $REFERENCE == "hg37" ]
+  then 
+      if [ $BIN_LEVEL == "5k" ]
+      then
+	  VBINS=res/gistic/grch37.bin.boundaries.5k.bowtie.k50.makerFile.txt
+	  
+      elif [ $BIN_LEVEL == "20k" ]
+      then
+	  VBINS=res/gistic/grch37.bin.boundaries.20k.bowtie.k50.makerFile.txt
+      elif [ $BIN_LEVEL == "50k" ]
+      then
+	  VBINS=res/gistic/grch37.bin.boundaries.50k.bowtie.k50.makerFile.txt
+      fi
+fi
+
+if [ $REFERENCE == "hg38" ]
+  then 
+      if [ $BIN_LEVEL == "5k" ]
+      then
+	  VBINS=res/gistic/grch38.bin.boundaries.5k.bwa.markerFile.txt
+	  
+      elif [ $BIN_LEVEL == "20k" ]
+      then
+	  VBINS=res/gistic/grch38.bin.boundaries.20k.bwa.markerFile.txt
+      elif [ $BIN_LEVEL == "50k" ]
+      then
+	  VBINS=res/gistic/grch38.bin.boundaries.50k.bwa.markerFile.txt
+      fi
 fi
 
 ## creating sample output diretory :: removes extension
 [[ ! -z "$EXTENSION" ]] || EXTENSION=.seg
 OUT_STEM=$( basename $INFILE $EXTENSION )
 # output directory to collect all samples, for this directory use "./"
-OUT_DIR=$5
+OUT_DIR=$6
 
 ## create the final path/to/output
 BD=${OUT_DIR}/out_DNA_${OUT_STEM}_${BIN_LEVEL}_c${CONF}  ## out_[DNA|SC]_hg19_1M_c${CONF}
 [[ -d $BD ]] || mkdir $BD
 
-## DNA: Default thresholds are kept for amplifications and deletions
+## DNA: Set more stringet thresholds to call amplifications and deletions
+##      AMP = 0.3 DEL = 0.4
 ##  SC: Set thresholds for copy number to AMP = log2(2.5)/2, and DEL = log2(1.2)/2
 ~/bin/gistic2 -refgene ${HG19MAT} -b ${BD} -seg ${INFILE} -mk $VBINS \
+	      -ta 0.1 -td 0.1 \
 	      -conf 0.${CONF} -broad 1 -twoside 1 \
 	      -res 0.05 -genegistic 1 -rx 0 -js 8 \
 	      -savegene 1 -gcm median -v 10 -armpeel 1

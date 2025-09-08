@@ -3,8 +3,6 @@
 ## which R is being used ! must be in single-cell-cnv environment
 ## R.home() == "/opt/common/CentOS_7/R/R-4.0.0/lib64/R" || stop("Wrong environment, run `module load R`")
 
-source("src/myLib.R")
-
 ## Collect arguments
 args <- commandArgs(trailingOnly = TRUE)
 #' for debugging:
@@ -64,7 +62,9 @@ if(! dir.exists(argsL$input.dir)) {
 }
 
 ## Arg2 default -- create output directory if it doesn't exist
-if(! dir.exists(argsL$output.dir)) {dir.create(argsL$output.dir, recursive = TRUE)}
+if(! dir.exists(argsL$output.dir)) {
+    dir.create(argsL$output.dir, recursive = TRUE)
+}
 
 
 ## Arg3 default
@@ -179,6 +179,24 @@ select_vbd_column <- function(vbd, column, coord) {
     return(out)
 }
 
+#' estimate clone FGA
+estimate_fga <- function(cell, base.ploidy = 2) {
+
+    fga <- sum(round(cell) != base.ploidy) / length(cell)
+
+    return(fga)
+}
+
+## estimate mapdMAPD
+mapd <- function(x, ...) {
+    az <- abs(x[2:length(x)] - x[1:(length(x)-1)])
+    mz <- median(az)
+    sdz <- sd(az)
+    cvz <- sd(az)/mean(az)
+    return(c("mapd" = mz, "mapd.sd" = sdz, "mapd.cv" = cvz))
+} ## mapd
+
+
 cat("selecting and writing quantals")
 ## cbs.seg.quantal is the same as seg.quantal
 ## chose cbs.seg.quantal colum as it's more descritive of the processing
@@ -227,16 +245,25 @@ rbc.df <- select_vbd_column(vbd = vbd, column = "count",
                             coord = chh)
 write.table(rbc.df,
             file = gzfile(file.path(outDir,
-                                    paste(sample.name, "_", genome, ".", bin.size,
-                                          ".bin_counts.txt.gz", sep = ""))),
+                              paste(sample.name, "_", genome, ".", bin.size,
+                                    ".bin_counts.txt.gz", sep = ""))),
             sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 rm(rbc.df)
 
-## MAPD
-cat("estimating MAPD...\n")
+## Unsegmented Lowess Ratio
 ## get lowess ration (lowratio) data (not segmented)
 lbd <- select_vbd_column(vbd = vbd, column = "lowess.ratio",
                          coord = NULL)
+## 
+write.table(lbd,
+            file = gzfile(file.path(outDir,
+                             paste(sample.name, "_", genome, ".", bin.size,
+                                   ".varbin.unsegmented.lowess.ratio.txt.gz",
+                                   sep = ""))),
+            sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
+## MAPD
+cat("estimating MAPD...\n")
 ## calculate mapd
 mapd.qc <- t(apply(lbd, 2, mapd))
 mapd.qc <- data.frame(cellID = rownames(mapd.qc), mapd.qc)
@@ -265,7 +292,8 @@ if(sample.name == "1000g") {
 } else {
     cell.list.qs <- paste(paste(xx[,1], xx[,2], xx[,3], sep = "_"), xx[,4], sep = ".")
 }
-    
+
+## create quantal ploidy df
 quantal.ploidy <- do.call(rbind, lapply(q.ploidy.files, read.delim, nrow = 1))
 quantal.ploidy$cellID  <- cell.list.qs
 
@@ -279,7 +307,6 @@ rm(quantal.ploidy, xx, cell.list.qs)
 ## get varbin stats
 cat("reading varbin stats data...\n")
 ## write out cell annotations file
-
 read_varbin_pe_stats <- function(stats.file) {
     cell.id <- gsub(".*/(.*)_(b[0-9]+).*", "\\1.\\2", stats.file )
     ##
@@ -298,14 +325,20 @@ read_varbin_pe_stats <- function(stats.file) {
     return(sst)
 }
 
-vb.stats.files <- list.files(inDir, pattern = ".counts.stats.bed$",
-                             full.names = TRUE)
+vb.stats.out <- file.path(
+    outDir,
+    paste(sample.name, "_", genome, ".varbin.stats.txt", sep = ""))
 
-varbin.stats <- do.call(rbind, lapply(vb.stats.files, read_varbin_pe_stats))
-varbin.stats <- cbind(cellID = rownames(varbin.stats), varbin.stats)
-
-write.table(varbin.stats, file = file.path(outDir, paste(sample.name, "_", genome, ".varbin.stats.txt", sep = "")),
-            sep = "\t", quote = FALSE , row.names = FALSE)
+if(! file.exists(vb.stats.out)) {
+    vb.stats.files <- list.files(inDir, pattern = ".counts.stats.bed$",
+                                 full.names = TRUE)
+    ##
+    varbin.stats <- do.call(rbind, lapply(vb.stats.files, read_varbin_pe_stats))
+    varbin.stats <- cbind(cellID = rownames(varbin.stats), varbin.stats)
+    ##
+    write.table(varbin.stats, file = vb.stats.out,
+                sep = "\t", quote = FALSE , row.names = FALSE)
+}
 
 ## READ WRITE SEG FILES
 cat("reading segment data...\n")
@@ -314,8 +347,10 @@ seg.files <- list.files(inDir, pattern = paste0("_", genome, ".", bin.size, ".bw
                         full.names = TRUE)
 
 igv.seg <- do.call(rbind, lapply(seg.files, read.delim)) 
-igv.seg$ID = gsub("varbin[0-9]+k..(.*)\\.(b[0-9]+)\\.(b[0-9]+).*", "\\1.\\2.\\3", igv.seg$ID)
+##igv.seg$ID = gsub("varbin[0-9]+k\\..(.*)\\.(b[0-9]+)\\.(b[0-9]+).*", "\\1.\\2.\\3", igv.seg$ID)
 igv.seg$chrom = gsub("[pq]", "", igv.seg$chrom)
+igv.seg$chrom = gsub("^chr", "", igv.seg$chrom)
+
 ## select(-start, -end, -num)
 igv.seg <- igv.seg[, !names(igv.seg) %in% c("start", "end", "num")]
 write.table(igv.seg,

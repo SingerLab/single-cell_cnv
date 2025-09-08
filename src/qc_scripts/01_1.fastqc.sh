@@ -12,14 +12,11 @@ echo $LSB_JOBINDEX
 echo $LSB_MAX_NUM_PROCESSORS
 ## [[ ! -z "$LSB_MAX_NUM_PROCESSORS" ]] || exit 101
 
-BWA_h37=/ifs/depot/pi/resources/genomes/GRCh37/bwa_fasta/b37.fasta
-GFF_h37=~/genomes/homo_sapiens/Ensembl/GRCh37.p13/Annotation/Genes/gencode.v19.annotation.gtf
-BOWTIE_h37=~/genomes/homo_sapiens/Ensembl/GRCh37.p13/Sequence/BowtieIndex/b37.fasta
-
-R1=( $( ls ${1}*fq.gz ) )
-
 EXTENSION=$2
 [[ ! -z "$EXTENSION" ]] || EXTENSION=.fq.gz
+
+R1=( $( ls ${1}*${EXTENSION} ) )
+
 
 MID=$( basename ${R1[$LSB_JOBINDEX]} $EXTENSION | sed -e 's/_IGO.*//')
 echo $MID

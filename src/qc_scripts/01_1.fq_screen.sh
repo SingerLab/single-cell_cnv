@@ -5,21 +5,19 @@
 set -E -e -x -u -o pipefail
 
 ## trap read debug
-
-MAX_MEM_GB=32G
+MEM_PER_JOB=$(echo $(printf "%d\n" ${LSB_CG_MEMLIMIT} )/1024^3 | bc )
+MAX_MEM_GB=$(( MEM_PER_JOB*LSB_MAX_NUM_PROCESSORS - 1 ))G
 
 echo $LSB_JOBINDEX
 echo $LSB_MAX_NUM_PROCESSORS
 ## [[ ! -z "$LSB_MAX_NUM_PROCESSORS" ]] || exit 101
 
-BWA_h37=/ifs/depot/pi/resources/genomes/GRCh37/bwa_fasta/b37.fasta
-GFF_h37=~/genomes/homo_sapiens/Ensembl/GRCh37.p13/Annotation/Genes/gencode.v19.annotation.gtf
-BOWTIE_h37=~/genomes/homo_sapiens/Ensembl/GRCh37.p13/Sequence/BowtieIndex/b37.fasta
-
-R1=( $( ls ${1}*fq.gz ) )
-
+FASTQ_DIR=$1
 EXTENSION=$2
-[[ ! -z "$EXTENSION" ]] || EXTENSION=.fq.gz
+OUTPUT_DIR=$3
+
+## get R1 data
+R1=( $( ls ${FASTQ_DIR}*${EXTENSION} ) )
 
 MID=$( basename ${R1[$LSB_JOBINDEX]} $EXTENSION | sed -e 's/_IGO.*//')
 echo $MID
@@ -27,7 +25,18 @@ echo $MID
 [ -d log/$MID ] || mkdir -p log/$MID
 [ -d tmp/ ] || mkdir -p tmp/
 
-[ -d fastq_screen ] || mkdir -p fastq_screen/
+[ -d $OUTPUT_DIR ] || mkdir -p $OUTPUT_DIR
 
-fastq_screen --aligner bwa --threads $LSB_MAX_NUM_PROCESSORS --subset 0 --conf ~/conf/fastq_screen.conf --outdir fastq_screen/ ${R1[$LSB_JOBINDEX]}  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").fastq_screen.log
-if [ $? -eq 0 ] ; then echo "fastqc_screen succesfull" ; else exit 13 ; fi
+fastq_screen --aligner bwa --threads $LSB_MAX_NUM_PROCESSORS \
+	     --subset 0 \
+	     --conf ~/conf/fastq_screen.conf --outdir ${OUTPUT_DIR}  ${R1[$LSB_JOBINDEX]}  2> log/${MID}/$(date "+%Y%m%d-%H%M%S").fastq_screen.log
+
+
+	     
+if [ $? -eq 0 ] ; then
+    echo "fastqc_screen succesfull" ;
+else
+    exit 13 ;
+    rm ${OUTPUT_DIR}/${R1[$LSB_JOBINDEX]}_temp_subset.fastq ;
+    rm ${OUTPUT_DIR}/${MID}_screen.txt ;
+fi

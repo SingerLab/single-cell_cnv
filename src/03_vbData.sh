@@ -82,7 +82,7 @@ if [ ${ALIGN_TYPE} = "PE" ] ; then
 	20k
 	5k
     )
-
+    
     for i in ${BINS[@]} ; do
 	echo varbin${i}/ $(ls varbin${i}/*${EXT} |wc -l ) \
 	     $( ls varbin${i}/*quantal.ploidy.txt | wc -l ) \

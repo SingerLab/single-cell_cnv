@@ -48,7 +48,7 @@ if(! dir.exists(argsL$output.dir)) dir.create(argsL$output.dir)
 
 
 ## Arg3 default
-if(! argsL$bin.size %in% c("500kb", "50kb")) {
+if(! argsL$bin.size %in% c("500kb", "100kb", "50kb")) {
     stop("resources for bin.size", argsL$bin.size, "are not available")
     q(save = "no")
 }
@@ -63,7 +63,9 @@ outDir <- file.path(argsL$output.dir)
 bin.size <- argsL$bin.size
 aligner <- argsL$aligner
 
-bins <- readRDS(paste("res/qdnaseq/qdnaseq.bins.", bin.size, ".rds", sep = ""))
+## bins <- readRDS(paste("res/qdnaseq/qdnaseq.bins.", bin.size, ".rds", sep = ""))
+bins <- getBinAnnotations(binSize=100, genome="hg38")
+
 readCounts <- binReadCounts(bins, path = inDir, ext = "md.bam", cache = TRUE)
 
 ## bamList <- list.files(inDir, pattern = "md.bam$")

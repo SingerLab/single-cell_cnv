@@ -52,8 +52,8 @@ MAX=$5
 GROUP=$(echo $( basename $(dirname $BAM) | sed -E 's/[PRMB]$//'))
 
 module load R/R-4.0.5
-
-for i in 5 20 50 100 120 200 ; do
+## 100 120 200
+for i in 5 20 50  ; do
     ## output dir
     OUT=varbin${i}k/${GROUP}
     [ -d $OUT ] || mkdir -p $OUT
